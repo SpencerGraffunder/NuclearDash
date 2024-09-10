@@ -1,0 +1,84 @@
+/*
+  The TFT_eSPI library incorporates an Adafruit_GFX compatible
+  button handling class, this sketch is based on the Arduin-o-phone
+  example.
+
+  This example diplays a keypad where numbers can be entered and
+  send to the Serial Monitor window.
+
+  The sketch has been tested on the ESP8266 (which supports SPIFFS)
+
+  The minimum screen size is 320 x 240 as that is the keypad size.
+
+  TOUCH_CS and SPI_TOUCH_FREQUENCY must be defined in the User_Setup.h file
+  for the touch functions to do anything.
+*/
+#ifndef _SCREEN_H
+#define _SCREEN_H
+
+// The SPIFFS (FLASH filing system) is used to hold touch screen
+// calibration data
+
+#include "FS.h"
+
+#include <SPI.h>
+#include <TFT_eSPI.h>      // Hardware-specific library
+
+extern TFT_eSPI tft; // Invoke custom library
+
+// This is the file name used to store the calibration data
+// You can change this to create new calibration files.
+// The SPIFFS file name must start with "/".
+#define CALIBRATION_FILE "/TouchCalData2"
+
+// Set REPEAT_CAL to true instead of false to run calibration
+// again, otherwise it will only be done once.
+// Repeat calibration if you change the screen rotation.
+#define REPEAT_CAL true
+
+// Keypad start position, key sizes and spacing
+#define KEY_X 40 // Centre of key
+#define KEY_Y 96
+#define KEY_W 62 // Width and height
+#define KEY_H 30
+#define KEY_SPACING_X 18 // X and Y gap
+#define KEY_SPACING_Y 20
+#define KEY_TEXTSIZE 1   // Font size multiplier
+
+// Using two fonts since numbers are nice when bold
+#define LABEL1_FONT &FreeSansOblique12pt7b // Key label font 1
+#define LABEL2_FONT &FreeSansBold12pt7b    // Key label font 2
+
+// Numeric display box size and location
+#define DISP_X 1
+#define DISP_Y 10
+#define DISP_W 238
+#define DISP_H 50
+#define DISP_TSIZE 3
+#define DISP_TCOLOR TFT_CYAN
+
+// Number length, buffer for storing it and character index
+#define NUM_LEN 12
+extern char numberBuffer[NUM_LEN + 1];
+extern uint8_t numberIndex;
+
+// We have a status line for messages
+#define STATUS_X 120 // Centred on this
+#define STATUS_Y 65
+
+// Create 15 keys for the keypad
+extern char keyLabel[15][5];
+extern uint16_t keyColor[15];
+
+// Invoke the TFT_eSPI button class and create all the button objects
+extern TFT_eSPI_Button key[15];
+
+//------------------------------------------------------------------------------------------
+
+void screenSetup();
+void screenLoop();
+void drawKeypad();
+void touch_calibrate();
+void status(const char *msg);
+
+#endif
