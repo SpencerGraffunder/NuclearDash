@@ -71,7 +71,7 @@ extern char keyLabel[15][5];
 extern uint16_t keyColor[15];
 
 // Invoke the TFT_eSPI button class and create all the button objects
-extern TFT_eSPI_Button key[15];
+extern TFT_eSPI_Button key[16];
 
 //------------------------------------------------------------------------------------------
 

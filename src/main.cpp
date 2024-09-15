@@ -33,6 +33,8 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
 
+  Serial.println("setup");
+
   screenSetup();
 
 
@@ -113,7 +115,7 @@ const char* ht_names_short[] = {
     "FuelTrimST",
     "FuelTrimLT",
     "IgnAngleB1",
-    "WidebandOvr",
+    "WBOverall",
     "Gear",
     "WaterInjDC"
 };

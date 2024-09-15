@@ -17,26 +17,12 @@ uint16_t keyColor[15] = {TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
                          TFT_BLUE, TFT_BLUE, TFT_BLUE
                         };
 
-const uint8_t nButtons = 12;
+const uint8_t nButtons = 16;
 
-char buttonLabel[nButtons][44] = {"RPM",\
-                                  "Manifold Pressure",\
-                                  "Throttle Position",\
-                                  "Oil Pressure",\
-                                  "Ignition Angle",\
-                                  "Wideband Overall",\
-                                  "Vehicle Speed",\
-                                  "Intake Cam Angle 1",\
-                                  "Battery Voltage",\
-                                  "Coolant Temperature",\
-                                  "Air Temperature",\
-                                  "Oil Temperature"\
-};
-
-HaltechValue_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE};
+HaltechValue_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
-TFT_eSPI_Button key[15];
+TFT_eSPI_Button key[16];
 /* END DEFINING EXTERN VARIABLES */
 
 void drawKeypad()
@@ -59,7 +45,7 @@ void drawKeypad()
 }
 
 void drawButtons() {
-  uint8_t nCols = 3;
+  uint8_t nCols = 4;
   uint8_t nRows = 4;
   for (uint8_t row = 0; row < nRows; row++) {
     for (uint8_t col = 0; col < nCols; col++) {

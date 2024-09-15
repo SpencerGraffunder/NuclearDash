@@ -48,6 +48,7 @@ struct CANValue {
     float offset;
     unsigned long update_interval;
     unsigned long last_update_time;
+    float scaled_value;
 };
 
 class HaltechCan {
@@ -116,7 +117,7 @@ bool HaltechCan::begin(long baudRate) {
 
 void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, uint8_t name,  HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset) {
     unsigned long update_interval = (frequency > 0) ? (1000 / frequency) : 0;
-    values.push_back({can_id, start_byte, end_byte, name, incomingUnit, frequency, scale_factor, offset, update_interval, 0});
+    values.push_back({can_id, start_byte, end_byte, name, incomingUnit, frequency, scale_factor, offset, update_interval, 0, 0.0f});
 }
 
 uint32_t HaltechCan::extractValue(const uint8_t* buffer, uint8_t start_byte, uint8_t end_byte) {
