@@ -34,7 +34,7 @@ extern TFT_eSPI tft; // Invoke custom library
 // Set REPEAT_CAL to true instead of false to run calibration
 // again, otherwise it will only be done once.
 // Repeat calibration if you change the screen rotation.
-#define REPEAT_CAL true
+#define REPEAT_CAL false
 
 // Keypad start position, key sizes and spacing
 #define KEY_X 40 // Centre of key
@@ -47,7 +47,7 @@ extern TFT_eSPI tft; // Invoke custom library
 
 // Using two fonts since numbers are nice when bold
 #define LABEL1_FONT &FreeSansOblique12pt7b // Key label font 1
-#define LABEL2_FONT &FreeSansBold12pt7b    // Key label font 2
+#define LABEL2_FONT &FreeMono9pt7b    // Key label font 2
 
 // Numeric display box size and location
 #define DISP_X 1
@@ -81,4 +81,4 @@ void drawKeypad();
 void touch_calibrate();
 void status(const char *msg);
 
-#endif
+#endif // _SCREEN_H

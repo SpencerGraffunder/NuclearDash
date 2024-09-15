@@ -1,4 +1,5 @@
 #include "screen.h"
+#include "main.h"
 
 
 /* DECLARED IN SCREEN.H AS EXTERN */
@@ -16,6 +17,23 @@ uint16_t keyColor[15] = {TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
                          TFT_BLUE, TFT_BLUE, TFT_BLUE
                         };
 
+const uint8_t nButtons = 12;
+
+char buttonLabel[nButtons][44] = {"RPM",\
+                                  "Manifold Pressure",\
+                                  "Throttle Position",\
+                                  "Oil Pressure",\
+                                  "Ignition Angle",\
+                                  "Wideband Overall",\
+                                  "Vehicle Speed",\
+                                  "Intake Cam Angle 1",\
+                                  "Battery Voltage",\
+                                  "Coolant Temperature",\
+                                  "Air Temperature",\
+                                  "Oil Temperature"\
+};
+
+HaltechValue_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
 TFT_eSPI_Button key[15];
@@ -36,6 +54,25 @@ void drawKeypad()
                         KEY_W, KEY_H, TFT_WHITE, keyColor[b], TFT_WHITE,
                         keyLabel[b], KEY_TEXTSIZE);
       key[b].drawButton();
+    }
+  }
+}
+
+void drawButtons() {
+  uint8_t nCols = 3;
+  uint8_t nRows = 4;
+  for (uint8_t row = 0; row < nRows; row++) {
+    for (uint8_t col = 0; col < nCols; col++) {
+      uint8_t buttonIndex = col + row * nCols;
+
+      tft.setFreeFont(LABEL2_FONT);
+      
+      uint16_t buttonWidth = TFT_HEIGHT / nCols;
+      uint16_t buttonHeight = TFT_WIDTH / nRows;
+
+      key[buttonIndex].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, ht_names_short[buttonValues[buttonIndex]], 1);
+
+      key[buttonIndex].drawButton();
     }
   }
 }
@@ -121,7 +158,7 @@ void screenSetup() {
   tft.init();
 
   // Set the rotation before we calibrate
-  tft.setRotation(0);
+  tft.setRotation(1);
 
   // Calibrate the touch screen and retrieve the scaling factors
   touch_calibrate();
@@ -129,19 +166,13 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
-  // Draw keypad background
-  tft.fillRect(0, 0, 320, 480, TFT_DARKGREY);
-
-  // Draw number display area and frame
-  tft.fillRect(DISP_X, DISP_Y, DISP_W, DISP_H, TFT_BLACK);
-  tft.drawRect(DISP_X, DISP_Y, DISP_W, DISP_H, TFT_WHITE);
-
   // Draw keypad
-  drawKeypad();
+  //drawKeypad();
+  drawButtons();
 }
 
-void screenLoop() {
-    uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+void screenLoopOld() {
+  uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
   // Pressed will be set true is there is a valid touch on the screen
   bool pressed = tft.getTouch(&t_x, &t_y);
@@ -212,5 +243,33 @@ void screenLoop() {
 
       delay(10); // UI debouncing
     }
+  }
+}
+
+void screenLoop() {
+  uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+
+  // Pressed will be set true is there is a valid touch on the screen
+  bool isValidTouch = tft.getTouch(&t_x, &t_y);
+
+  // / Check if any key coordinate boxes contain the touch coordinates
+  for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+    if (isValidTouch && key[buttonIndex].contains(t_x, t_y)) {
+      key[buttonIndex].press(true);  // tell the button it is pressed
+    } else {
+      key[buttonIndex].press(false);  // tell the button it is NOT pressed
+    }
+  }
+
+  for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+    if (key[buttonIndex].justReleased()) {
+      key[buttonIndex].drawButton();     // draw normal
+    }
+
+    if (key[buttonIndex].justPressed()) {
+      key[buttonIndex].drawButton(true);  // draw invert
+    }
+
+    delay(10); // UI debouncing
   }
 }
