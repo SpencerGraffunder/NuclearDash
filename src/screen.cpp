@@ -19,30 +19,10 @@ uint16_t keyColor[15] = {TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
 
 const uint8_t nButtons = 16;
 
-HaltechValue_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
+HaltechDisplayType_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
 TFT_eSPI_Button key[16];
-
-
-void drawButtons() {
-  uint8_t nCols = 4;
-  uint8_t nRows = 4;
-  for (uint8_t row = 0; row < nRows; row++) {
-    for (uint8_t col = 0; col < nCols; col++) {
-      uint8_t buttonIndex = col + row * nCols;
-
-      tft.setFreeFont(LABEL2_FONT);
-      
-      uint16_t buttonWidth = TFT_HEIGHT / nCols;
-      uint16_t buttonHeight = TFT_WIDTH / nRows;
-
-      key[buttonIndex].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, ht_names_short[buttonValues[buttonIndex]], 1);
-
-      key[buttonIndex].drawButton();
-    }
-  }
-}
 
 void touch_calibrate()
 {
@@ -133,9 +113,18 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
-  // Draw keypad
-  //drawKeypad();
-  drawButtons();
+  uint8_t nCols = 4;
+  uint8_t nRows = 4;
+  uint16_t buttonWidth = TFT_HEIGHT / nCols;
+  uint16_t buttonHeight = TFT_WIDTH / nRows;
+  for (uint8_t row = 0; row < nRows; row++) {
+    for (uint8_t col = 0; col < nCols; col++) {
+      uint8_t index = col + row * nCols;
+      tft.setFreeFont(LABEL2_FONT);    
+      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, HaltechValueDisplay(HT_NONE));
+      key[index].drawButton();
+    }
+  }
 }
 
 void screenLoop() {

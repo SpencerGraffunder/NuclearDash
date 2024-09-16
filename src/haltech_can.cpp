@@ -1,6 +1,74 @@
 #include "haltech_can.h"
 #include "main.h"
 
+const char* ht_names[] = {
+    "RPM",
+    "Manifold Pressure",
+    "Throttle Position",
+    "Coolant Pressure",
+    "Fuel Pressure",
+    "Oil Pressure",
+    "Engine Demand",
+    "Wastegate Pressure",
+    "Injection State 1 Duty Cycle",
+    "Injection State 2 Duty Cycle",
+    "Ignition Angle",
+    "Wheel Slip",
+    "Wheel Diff",
+    "Launch Control End RPM",
+    "Wideband Sensor 1",
+    "Knock Level 1",
+    "Wheel Speed Rear Right",
+    "Boost Control Output",
+    "Vehicle Speed",
+    "Intake Cam Angle 1",
+    "Battery Voltage",
+    "Target Boost Level",
+    "Coolant Temperature",
+    "Air Temperature",
+    "Oil Temperature",
+    "Fuel Trim Short Term Bank 1",
+    "Fuel Trim Long Term Bank 1",
+    "Ignition Angle Bank 1",
+    "Wideband Overall",
+    "Gear",
+    "Water Injection Advanced Solenoid Duty Cycle"
+};
+
+const char* ht_names_short[] = {
+    "RPM",
+    "ManifPres",
+    "ThrotPos",
+    "CoolPres",
+    "FuelPres",
+    "OilPres",
+    "EngDemand",
+    "WastePres",
+    "InjState1",
+    "InjState2",
+    "IgnAngle",
+    "WheelSlip",
+    "WheelDiff",
+    "LaunchRPM",
+    "WidebandS1",
+    "KnockLvl1",
+    "WheelSpRR",
+    "BoostCtrl",
+    "VehSpeed",
+    "IntCamAng1",
+    "BattVolt",
+    "TargBoost",
+    "CoolTemp",
+    "AirTemp",
+    "OilTemp",
+    "FuelTrimST",
+    "FuelTrimLT",
+    "IgnAngleB1",
+    "WBOverall",
+    "Gear",
+    "WaterInjDC"
+};
+
 HaltechCan::HaltechCan() : lastProcessTime(0) {
     this->addValue(0x360, 0, 1, HT_RPM, UNIT_PERCENT);
     this->addValue(0x360, 2, 3, HT_MANIFOLD_PRESSURE, UNIT_KPA_ABS, 50, 0.1);
@@ -49,7 +117,7 @@ bool HaltechCan::begin(long baudRate) {
     return true;
 }
 
-void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechValue_e name,  HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset) {
+void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset) {
     unsigned long update_interval = (frequency > 0) ? (1000 / frequency) : 0;
     values[name] = {can_id, start_byte, end_byte, incomingUnit, frequency, scale_factor, offset, update_interval, 0, 0.0f, false};
 }
@@ -68,7 +136,7 @@ void HaltechCan::process() {
     if (CAN.parsePacket()) {
         uint32_t packetId = CAN.packetId();
         
-        for (HaltechValue_e type = HT_RPM; type < HT_NONE; type = (HaltechValue_e)(type + 1)) {
+        for (HaltechDisplayType_e type = HT_RPM; type < HT_NONE; type = (HaltechDisplayType_e)(type + 1)) {
             if (packetId == values[type].can_id && (currentTime - values[type].last_update_time >= values[type].update_interval)) {
                 uint8_t buffer[8];
                 int bytesRead = CAN.readBytes(buffer, 8);

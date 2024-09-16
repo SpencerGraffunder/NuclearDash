@@ -10,24 +10,18 @@ TFT_eSPI_Button::TFT_eSPI_Button(void) {
   _label[11]  = '\0';
   currstate = false;
   laststate = false;
+  htEntity = HaltechValueDisplay(HT_NONE)
 }
 
 // Classic initButton() function: pass center & size
-void TFT_eSPI_Button::initButton(
- TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h,
- uint16_t outline, uint16_t fill, uint16_t textcolor,
- char *label, uint8_t textsize)
+void TFT_eSPI_Button::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
 {
   // Tweak arguments and pass to the newer initButtonUL() function...
-  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill,
-    textcolor, label, textsize);
+  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, label, textsize, htEntity);
 }
 
 // Newer function instead accepts upper-left corner & size
-void TFT_eSPI_Button::initButtonUL(
- TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h,
- uint16_t outline, uint16_t fill, uint16_t textcolor,
- const char *label, uint8_t textsize)
+void TFT_eSPI_Button::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
 {
   _x1           = x1;
   _y1           = y1;
@@ -38,7 +32,7 @@ void TFT_eSPI_Button::initButtonUL(
   _textcolor    = textcolor;
   _textsize     = textsize;
   _gfx          = gfx;
-  strncpy(_label, label, 11);
+  this->htEntity = htEntity;
 }
 
 // Adjust text datum and x, y deltas

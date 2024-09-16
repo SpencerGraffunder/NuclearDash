@@ -77,7 +77,6 @@ extern TFT_eSPI_Button key[16];
 
 void screenSetup();
 void screenLoop();
-void drawKeypad();
 void touch_calibrate();
 void status(const char *msg);
 

@@ -38,7 +38,6 @@ void setup() {
 
   screenSetup();
 
-
   if (!htc.begin(1000E3)) {
     while (1) {
       Serial.println("Haltech CAN init failed");
@@ -52,71 +51,3 @@ void loop(void) {
   htc.process();
 }
 
-
-const char* ht_names[] = {
-    "RPM",
-    "Manifold Pressure",
-    "Throttle Position",
-    "Coolant Pressure",
-    "Fuel Pressure",
-    "Oil Pressure",
-    "Engine Demand",
-    "Wastegate Pressure",
-    "Injection State 1 Duty Cycle",
-    "Injection State 2 Duty Cycle",
-    "Ignition Angle",
-    "Wheel Slip",
-    "Wheel Diff",
-    "Launch Control End RPM",
-    "Wideband Sensor 1",
-    "Knock Level 1",
-    "Wheel Speed Rear Right",
-    "Boost Control Output",
-    "Vehicle Speed",
-    "Intake Cam Angle 1",
-    "Battery Voltage",
-    "Target Boost Level",
-    "Coolant Temperature",
-    "Air Temperature",
-    "Oil Temperature",
-    "Fuel Trim Short Term Bank 1",
-    "Fuel Trim Long Term Bank 1",
-    "Ignition Angle Bank 1",
-    "Wideband Overall",
-    "Gear",
-    "Water Injection Advanced Solenoid Duty Cycle"
-};
-
-const char* ht_names_short[] = {
-    "RPM",
-    "ManifPres",
-    "ThrotPos",
-    "CoolPres",
-    "FuelPres",
-    "OilPres",
-    "EngDemand",
-    "WastePres",
-    "InjState1",
-    "InjState2",
-    "IgnAngle",
-    "WheelSlip",
-    "WheelDiff",
-    "LaunchRPM",
-    "WidebandS1",
-    "KnockLvl1",
-    "WheelSpRR",
-    "BoostCtrl",
-    "VehSpeed",
-    "IntCamAng1",
-    "BattVolt",
-    "TargBoost",
-    "CoolTemp",
-    "AirTemp",
-    "OilTemp",
-    "FuelTrimST",
-    "FuelTrimLT",
-    "IgnAngleB1",
-    "WBOverall",
-    "Gear",
-    "WaterInjDC"
-};

@@ -40,7 +40,7 @@ typedef enum {
     HT_GEAR,
     HT_WATER_INJECTION_ADVANCED_SOLENOID_DUTY_CYCLE,
     HT_NONE
-} HaltechValue_e;
+} HaltechDisplayType_e;
 
 typedef enum {
     UNIT_RPM,
@@ -89,8 +89,8 @@ public:
     HaltechCan();
     bool begin(long baudRate = 1000E3);
     void process();
-    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechValue_e name,  HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 1.0f);
-    std::map<HaltechValue_e, CANValue> values;
+    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 1.0f);
+    std::map<HaltechDisplayType_e, CANValue> values;
 
 private:
     unsigned long lastProcessTime;
