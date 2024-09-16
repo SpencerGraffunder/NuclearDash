@@ -49,6 +49,12 @@ void TFT_eSPI_Button::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t da
   _textdatum = datum;
 }
 
+void TFT_eSPI_Button::drawValue(float val) {
+  String valStr = String(val, 2);
+  _gfx->drawString(valStr, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
+  lastVal = val;
+}
+
 void TFT_eSPI_Button::drawButton(bool inverted, String long_name) {
   uint16_t fill, outline, text;
 
@@ -86,6 +92,7 @@ void TFT_eSPI_Button::drawButton(bool inverted, String long_name) {
       _gfx->drawString(_label, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
     else
       _gfx->drawString(long_name, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
+    drawValue(lastVal);
 
     _gfx->setTextDatum(tempdatum);
     _gfx->setTextPadding(tempPadding);

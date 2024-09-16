@@ -24,6 +24,7 @@ class TFT_eSPI_Button
   void     setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
   
   void     drawButton(bool inverted = false, String long_name = "");
+  void     drawValue(float val);
   bool     contains(int16_t x, int16_t y);
 
   void     press(bool p);
@@ -39,6 +40,7 @@ class TFT_eSPI_Button
   uint8_t  _textsize, _textdatum; // Text size multiplier and text datum for button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
   char     _label[12]; // Button text is 9 chars maximum unless long_name used
+  float    lastVal;
 
   bool  currstate, laststate; // Button states
 };
