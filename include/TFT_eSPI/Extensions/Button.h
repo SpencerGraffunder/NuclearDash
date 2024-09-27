@@ -6,7 +6,7 @@
 // within button
 ***************************************************************************************/
 
-#include "haltech_screen_entity.h"
+#include "include/haltech_screen_entity.h"
 
 class TFT_eSPI_Button
 {
@@ -21,6 +21,7 @@ class TFT_eSPI_Button
   // Adjust text datum and x, y deltas
   void     setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
   void     drawButton(bool inverted = false, String long_name = "");
+  void     drawValue(float val);
   bool     contains(int16_t x, int16_t y);
   void     press(bool p);
   bool     isPressed();
@@ -38,4 +39,6 @@ class TFT_eSPI_Button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
   bool currstate;
   bool laststate;
+  char _label[12];
+  float lastVal;
 };

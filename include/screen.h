@@ -22,7 +22,7 @@
 #include "FS.h"
 
 #include <SPI.h>
-#include <TFT_eSPI.h>      // Hardware-specific library
+#include "TFT_eSPI/TFT_eSPI.h"
 
 extern TFT_eSPI tft; // Invoke custom library
 

@@ -22,7 +22,7 @@
 #include "haltech_can.h"
 #include "FS.h"
 #include <SPI.h>
-#include <TFT_eSPI.h>      // Hardware-specific library
+#include "TFT_eSPI/TFT_eSPI.h"
 #include "screen.h"
 #include "main.h"
 

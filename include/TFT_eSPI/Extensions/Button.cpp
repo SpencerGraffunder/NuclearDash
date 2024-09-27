@@ -2,23 +2,26 @@
 ** Code for the GFX button UI element
 ** Grabbed from Adafruit_GFX library and enhanced to handle any label font
 ***************************************************************************************/
+
+#include "haltech_screen_entity.h"
+
 TFT_eSPI_Button::TFT_eSPI_Button(void) {
   _gfx       = nullptr;
   _xd        = 0;
   _yd        = 0;
   _textdatum = MC_DATUM;
-  _label[11]  = '\0';
-  currstate = false;
-  laststate = false;
-  htEntity = HaltechValueDisplay(HT_NONE)
+  _label[11] = '\0';
+  currstate  = false;
+  laststate  = false;
+  htEntity   = HaltechValueDisplay(HT_NONE);
 }
 
 // Classic initButton() function: pass center & size
-void TFT_eSPI_Button::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
-{
-  // Tweak arguments and pass to the newer initButtonUL() function...
-  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, label, textsize, htEntity);
-}
+// void TFT_eSPI_Button::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
+// {
+//   // Tweak arguments and pass to the newer initButtonUL() function...
+//   initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, label, textsize, htEntity);
+// }
 
 // Newer function instead accepts upper-left corner & size
 void TFT_eSPI_Button::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)

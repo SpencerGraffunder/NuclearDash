@@ -24,7 +24,7 @@
 
 // Only ONE line below should be uncommented to define your setup.  Add extra lines and files as needed.
 
-#include <User_Setup.h>           // Default setup is root library folder
+#include "TFT_eSPI/User_Setup.h"
 
 //#include <User_Setups/Setup1_ILI9341.h>  // Setup file for ESP8266 configured for my ILI9341
 //#include <User_Setups/Setup2_ST7735.h>   // Setup file for ESP8266 configured for my ST7735
@@ -221,7 +221,7 @@
      #include <TFT_Drivers/ILI9481_Defines.h>
      #define  TFT_DRIVER 0x9481
 #elif defined (ILI9488_DRIVER)
-     #include <TFT_Drivers/ILI9488_Defines.h>
+     #include "TFT_eSPI/TFT_Drivers/ILI9488_Defines.h"
      #define  TFT_DRIVER 0x9488
 #elif defined (HX8357D_DRIVER)
      #include "TFT_Drivers/HX8357D_Defines.h"
