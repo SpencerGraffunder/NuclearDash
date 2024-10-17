@@ -26,7 +26,6 @@
 #include "screen.h"
 #include "main.h"
 
-
 HaltechCan htc;
 
 void setup() {

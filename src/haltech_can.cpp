@@ -69,7 +69,7 @@ const char* ht_names_short[] = {
     "WaterInjDC"
 };
 
-HaltechCan::HaltechCan() : lastProcessTime(0) {
+HaltechCan::HaltechCan() : lastProcessTime(0), customSPI(VSPI), CAN0(&customSPI, CAN_SPI_CS) {
     this->addValue(0x360, 0, 1, HT_RPM, UNIT_PERCENT);
     this->addValue(0x360, 2, 3, HT_MANIFOLD_PRESSURE, UNIT_KPA_ABS, 50, 0.1);
     this->addValue(0x360, 4, 5, HT_THROTTLE_POSITION, UNIT_PERCENT, 50, 0.1);
@@ -105,13 +105,13 @@ HaltechCan::HaltechCan() : lastProcessTime(0) {
 
 bool HaltechCan::begin(long baudRate) {
     
-    if (!CAN.begin(baudRate)) {
+    if (!(CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_16MHZ) == CAN_OK)) {
         DEBUG("Starting CAN failed!\n");
         return false;
     }
     
     // Set CAN pins for ESP32
-    CAN.setPins(13, 33); // RX, TX
+    CAN0.setPins(13, 33); // RX, TX
     
     DEBUG("Haltech CAN initialized\n");
     return true;

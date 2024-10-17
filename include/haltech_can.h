@@ -2,8 +2,14 @@
 #define HALTECH_CAN_H
 
 #include <Arduino.h>
-#include <CAN.h>
+#include <mcp_can.h>
 #include <map>
+
+#define CAN_SPI_MISO 19
+#define CAN_SPI_MOSI 23
+#define CAN_SPI_SCK  18
+#define CAN_SPI_CS   15
+#define CAN_INT  2
 
 #define DEBUG(x, ...) Serial.printf(x, ##__VA_ARGS__)
 
@@ -94,7 +100,8 @@ public:
 
 private:
     unsigned long lastProcessTime;
-
+    MCP_CAN CAN0;
+    SPIClass customSPI;
     uint32_t extractValue(const uint8_t* buffer, uint8_t start_byte, uint8_t end_byte);
 };
 
