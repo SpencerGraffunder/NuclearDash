@@ -153,7 +153,7 @@ void screenLoop() {
       htc.values[buttonValues[buttonIndex]].justUpdated = true;
     }
     if (htc.values[buttonValues[buttonIndex]].justUpdated) {
-      key[buttonIndex].drawValue(htc.values[buttonValues[buttonIndex]].scaled_value);
+      //key[buttonIndex].drawValue(htc.values[buttonValues[buttonIndex]].scaled_value);
       htc.values[buttonValues[buttonIndex]].justUpdated = false;
     }
 

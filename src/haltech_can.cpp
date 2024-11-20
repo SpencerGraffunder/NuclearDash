@@ -111,7 +111,7 @@ bool HaltechCan::begin(long baudRate) {
     }
     
     // Set CAN pins for ESP32
-    CAN0.setPins(13, 33); // RX, TX
+    //CAN0.setPins(13, 33); // RX, TX
     
     DEBUG("Haltech CAN initialized\n");
     return true;
@@ -133,7 +133,7 @@ uint32_t HaltechCan::extractValue(const uint8_t* buffer, uint8_t start_byte, uin
 void HaltechCan::process() {
     unsigned long currentTime = millis();
 
-    if (CAN.parsePacket()) {
+    if (CAN0.parsePacket()) {
         uint32_t packetId = CAN.packetId();
         
         for (HaltechDisplayType_e type = HT_RPM; type < HT_NONE; type = (HaltechDisplayType_e)(type + 1)) {
