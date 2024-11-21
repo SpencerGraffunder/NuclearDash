@@ -6,7 +6,37 @@
 // within button
 ***************************************************************************************/
 
-#include "haltech_screen_entity.h"
+#include "../../include/haltech_can.h"
+#include <string>
+
+typedef enum {
+  BUTTON_STATUS_OFF = 0,
+  BUTTON_STATUS_ON,
+} buttonStatus_e;
+
+typedef enum {
+  BUTTON_STATUS_COLOR_GREEN = 0,
+  BUTTON_STATUS_COLOR_AMBER,
+  BUTTON_STATUS_COLOR_RED,
+} buttonStatusColor_e;
+
+class HaltechScreenEntity {
+  public:
+    HaltechScreenEntity(HaltechDisplayType_e type);
+    float getValue();
+    std::string getValueString(uint8_t decimalPlaces = 1);
+    bool isValueNew();
+    void clearValueNew();
+    bool isButton();
+    void updateValue(float value);
+    bool isButtonStatusOn(buttonStatusColor_e color);
+  private:
+    bool valueNew;
+    float value;
+    HaltechDisplayType_e type;
+    buttonStatus_e buttonStatus[3];
+    std::string displayString = "button";
+};
 
 class TFT_eSPI_Button
 {

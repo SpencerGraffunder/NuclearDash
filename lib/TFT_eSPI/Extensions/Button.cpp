@@ -2,9 +2,42 @@
 ** Code for the GFX button UI element
 ** Grabbed from Adafruit_GFX library and enhanced to handle any label font
 ***************************************************************************************/
-#include "haltech_screen_entity.h"
 
-TFT_eSPI_Button::TFT_eSPI_Button(void) : htEntity(HaltechValueDisplay(HT_NONE)) {
+// HaltechValueDisplay
+HaltechScreenEntity::HaltechScreenEntity(HaltechDisplayType_e type) {
+    this->type = type;
+}
+
+float HaltechScreenEntity::getValue() {
+    return value;
+}
+
+std::string HaltechScreenEntity::getValueString(uint8_t decimalPlaces) {
+    return std::string(value, decimalPlaces);
+}
+
+bool HaltechScreenEntity::isValueNew() {
+    return valueNew;
+}
+
+void HaltechScreenEntity::clearValueNew() {
+    valueNew = false;
+}
+
+bool HaltechScreenEntity::isButton() {
+    return false;
+}
+
+void HaltechScreenEntity::updateValue(float value) {
+    this->value = value;
+    valueNew = true;
+}
+
+bool HaltechScreenEntity::isButtonStatusOn(buttonStatusColor_e color) {
+    return buttonStatus[color] == BUTTON_STATUS_ON;
+}
+
+TFT_eSPI_Button::TFT_eSPI_Button(void) : htEntity(HaltechScreenEntity(HT_NONE)) {
   _gfx       = nullptr;
   _xd        = 0;
   _yd        = 0;
@@ -12,7 +45,6 @@ TFT_eSPI_Button::TFT_eSPI_Button(void) : htEntity(HaltechValueDisplay(HT_NONE)) 
   _label[11]  = '\0';
   currstate = false;
   laststate = false;
-  //htEntity = HaltechValueDisplay(HT_NONE);
 }
 
 // Classic initButton() function: pass center & size
