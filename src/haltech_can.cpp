@@ -105,7 +105,7 @@ HaltechCan::HaltechCan() : lastProcessTime(0), customSPI(VSPI), CAN0(&customSPI,
 
 bool HaltechCan::begin(long baudRate) {
     
-    if (!(CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_16MHZ) == CAN_OK)) {
+    if (!(CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)) {
         DEBUG("Starting CAN failed!\n");
         return false;
     }
