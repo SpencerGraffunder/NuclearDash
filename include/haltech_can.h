@@ -2,7 +2,7 @@
 #define HALTECH_CAN_H
 
 #include <Arduino.h>
-#include <CAN.h>
+//#include <CAN.h>
 #include <map>
 
 #define DEBUG(x, ...) Serial.printf(x, ##__VA_ARGS__)

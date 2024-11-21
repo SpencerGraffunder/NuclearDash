@@ -1,5 +1,6 @@
 #include "haltech_can.h"
 #include "main.h"
+#include <CAN.h>
 
 const char* ht_names[] = {
     "RPM",

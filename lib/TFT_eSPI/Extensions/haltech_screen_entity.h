@@ -1,7 +1,7 @@
 #ifndef _HALTECH_BUTTON_H
 #define _HALTECH_BUTTON_H
 
-#include "haltech_can.h"
+#include "../../include/haltech_can.h"
 #include <string>
 
 typedef enum {

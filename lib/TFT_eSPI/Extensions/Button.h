@@ -26,7 +26,7 @@ class TFT_eSPI_Button
   bool     isPressed();
   bool     justPressed();
   bool     justReleased();
-
+  void     drawValue(float val);
   HaltechScreenEntity htEntity;
 
  private:
@@ -38,4 +38,6 @@ class TFT_eSPI_Button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
   bool currstate;
   bool laststate;
+  float lastVal;
+  char _label[12];
 };

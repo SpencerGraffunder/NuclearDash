@@ -36,7 +36,7 @@ void setup() {
 
   Serial.println("setup");
 
-  screenSetup();
+  //screenSetup();
 
   if (!htc.begin(1000E3)) {
     while (1) {
@@ -47,7 +47,6 @@ void setup() {
 }
 
 void loop(void) {
-  screenLoop();
+  //screenLoop();
   htc.process();
 }
-
