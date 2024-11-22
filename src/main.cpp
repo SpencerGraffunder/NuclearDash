@@ -162,13 +162,14 @@ void setup()
   delay(1000);
 
   // initialize canbus with 1000kbit and 16mhz xtal
-  if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_16MHZ) == CAN_OK)
+  if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
     Serial.println("MCP2515 Initialized Successfully!");
   else
     Serial.println("Error Initializing MCP2515...");
 
   // Set operation mode to normal so the MCP2515 sends acks to received data.
   CAN0.setMode(MCP_NORMAL);
+  
 
   pinMode(CAN0_INT, INPUT);     // set INT pin to be an input
   digitalWrite(CAN0_INT, HIGH); // set INT pin high to enable interna pullup
@@ -185,7 +186,7 @@ void loop()
   {
     KAintervalMillis = currentMillis;
     SendKeepAlive();
-    Serial.println("ka");
+    //Serial.println("ka");
   }
 
   // Execute buttoninfo frame every 30 ms
@@ -201,6 +202,6 @@ void loop()
   {
     CAN0.readMsgBuf(&rxId, &len, rxBuf); // Read data: len = data length, buf = data byte(s)
     canRead();                           // execute canRead function to negotiate with ecu
-    Serial.println("read");
+    //Serial.println("read");
   }
 }
