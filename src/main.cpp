@@ -118,10 +118,10 @@ void canRead()
   }
 }
 
-void SendButtonInfo()
+void SendButtonInfo(int buttonState)
 {
   byte ButtonInfo[3];            // declare an array for 3 bytes used for key pressed information
-  bitWrite(ButtonInfo[0], 0, 0); // byte 0, bit 0, button 1
+  bitWrite(ButtonInfo[0], 0, buttonState); // byte 0, bit 0, button 1
   bitWrite(ButtonInfo[0], 1, 0); // byte 0, bit 0, button 2
   bitWrite(ButtonInfo[0], 2, 0); // byte 0, bit 0, button 3
   bitWrite(ButtonInfo[0], 3, 0); // byte 0, bit 0, button 4
@@ -169,7 +169,7 @@ void setup()
 
   // Set operation mode to normal so the MCP2515 sends acks to received data.
   CAN0.setMode(MCP_NORMAL);
-  
+
 
   pinMode(CAN0_INT, INPUT);     // set INT pin to be an input
   digitalWrite(CAN0_INT, HIGH); // set INT pin high to enable interna pullup
@@ -193,7 +193,7 @@ void loop()
   if (currentMillis - ButtonInfoIntervalMillis >= ButtonInfoInterval)
   {
     ButtonInfoIntervalMillis = currentMillis;
-    //SendButtonInfo();
+    SendButtonInfo(millis()/1000%2);
     //Serial.println("bi");
   }
 
