@@ -3,7 +3,7 @@
 ** Grabbed from Adafruit_GFX library and enhanced to handle any label font
 ***************************************************************************************/
 
-#include "../../include/main.h"
+#include "main.h"
 #include "haltech_button.h"
 
 HaltechScreenEntity::HaltechScreenEntity(HaltechDisplayType_e type) {
