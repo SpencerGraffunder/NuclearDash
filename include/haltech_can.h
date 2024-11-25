@@ -1,11 +1,29 @@
+/* 
+This class needs to:
+- When the screen updates a button state
+    - Send button updates to the ECU
+- When the ECU sends a button update
+    - Update the button state
+- When the ECU sends a value
+    - Read, convert, update the value in "dashValues"
+*/ 
+
+
 #ifndef HALTECH_CAN_H
 #define HALTECH_CAN_H
 
 #include <Arduino.h>
-//#include <CAN.h>
 #include <map>
 
+#define CS_PIN 15
+#define MOSI_PIN 14
+#define MISO_PIN 35
+#define SCK_PIN 12
+#define CAN0_INT 5
+
 #define DEBUG(x, ...) Serial.printf(x, ##__VA_ARGS__)
+
+
 
 typedef enum {
     HT_RPM = 0,
@@ -70,18 +88,18 @@ typedef enum {
     UNIT_NONE,
 } HaltechUnit_e;
 
-struct CANValue {
-    uint32_t can_id;
+// Each displayable field needs to have an instance of this struct
+struct HaltechDashValue {
+    uint32_t can_id;            // From Haltech's documentation
     uint8_t start_byte;
     uint8_t end_byte;
-    HaltechUnit_e incomingUnit;
-    uint16_t frequency;  // New field for message frequency in Hz
-    float scale_factor;
-    float offset;
-    unsigned long update_interval;
-    unsigned long last_update_time;
-    float scaled_value;
-    bool justUpdated;
+    HaltechUnit_e incomingUnit; // Unit that the raw data will be converted to using the scale factor and offset
+    float scale_factor;         // Factor to scale the raw data
+    float offset;               // Add? to raw data after scaling
+    unsigned long update_interval; // Interval between expected updates from the ECU
+    unsigned long last_update_time; // Millis when last updated
+    float scaled_value; // Value after scaling has been applied
+    bool justUpdated;   // Tracks whether the display needs to be updated
 };
 
 class HaltechCan {
@@ -89,13 +107,17 @@ public:
     HaltechCan();
     bool begin(long baudRate = 1000E3);
     void process();
-    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 1.0f);
-    std::map<HaltechDisplayType_e, CANValue> values;
+    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 0.0f);
+    std::map<HaltechDisplayType_e, HaltechDashValue> dashValues;
 
 private:
     unsigned long lastProcessTime;
 
     uint32_t extractValue(const uint8_t* buffer, uint8_t start_byte, uint8_t end_byte);
+
+    void canReadDemo();
+    void SendButtonInfoDemo();
+    void SendKeepAliveDemo();
 };
 
 #endif // HALTECH_CAN_H

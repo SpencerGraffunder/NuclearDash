@@ -32,21 +32,21 @@ HaltechCan htc;
 void setup() {
   // Use serial port
   Serial.begin(115200);
-  delay(2000);
+  delay(500);
 
   Serial.println("setup");
 
-  //screenSetup();
+  screenSetup();
 
   if (!htc.begin(1000E3)) {
     while (1) {
       Serial.println("Haltech CAN init failed");
-      delay(1000);
+      delay(500);
     }
   }
 }
 
 void loop(void) {
-  //screenLoop();
+  screenLoop();
   htc.process();
 }

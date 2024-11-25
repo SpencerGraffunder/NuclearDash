@@ -8,21 +8,13 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
-// Create 15 keys for the keypad
-char keyLabel[15][5] = {"New", "Del", "Send", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "#" };
-uint16_t keyColor[15] = {TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
-                         TFT_BLUE, TFT_BLUE, TFT_BLUE,
-                         TFT_BLUE, TFT_BLUE, TFT_BLUE,
-                         TFT_BLUE, TFT_BLUE, TFT_BLUE,
-                         TFT_BLUE, TFT_BLUE, TFT_BLUE
-                        };
-
 const uint8_t nButtons = 16;
 
-HaltechDisplayType_e buttonValues[nButtons] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
+HaltechDisplayType_e buttonValues[nButtons] = {
+  HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
-TFT_eSPI_Button key[16];
+HaltechButton key[16];
 
 void touch_calibrate()
 {
@@ -105,7 +97,7 @@ void screenSetup() {
   tft.init();
 
   // Set the rotation before we calibrate
-  tft.setRotation(1);
+  tft.setRotation(3);
 
   // Calibrate the touch screen and retrieve the scaling factors
   touch_calibrate();
@@ -121,7 +113,7 @@ void screenSetup() {
     for (uint8_t col = 0; col < nCols; col++) {
       uint8_t index = col + row * nCols;
       tft.setFreeFont(LABEL2_FONT);    
-      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, HaltechScreenEntity(HT_NONE));
+      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, HaltechScreenEntity((HaltechDisplayType_e)(row*nRows+col)));
       key[index].drawButton();
     }
   }
@@ -130,7 +122,7 @@ void screenSetup() {
 void screenLoop() {
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
-  // Pressed will be set true is there is a valid touch on the screen
+  // will be set true if there is a valid touch on the screen
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
 
   // Check if any key coordinate boxes contain the touch coordinates
@@ -147,14 +139,21 @@ void screenLoop() {
       key[buttonIndex].drawButton();     // draw normal
     }
     if (key[buttonIndex].justPressed()) {
+      key[buttonIndex].pressedTime = millis();
       key[buttonIndex].drawButton(true);  // draw invert
-
-      htc.values[buttonValues[buttonIndex]].scaled_value++;
-      htc.values[buttonValues[buttonIndex]].justUpdated = true;
+      htc.dashValues[buttonValues[buttonIndex]].scaled_value = !htc.dashValues[buttonValues[buttonIndex]].scaled_value;
+      htc.dashValues[buttonValues[buttonIndex]].justUpdated = true;
     }
-    if (htc.values[buttonValues[buttonIndex]].justUpdated) {
-      //key[buttonIndex].drawValue(htc.values[buttonValues[buttonIndex]].scaled_value);
-      htc.values[buttonValues[buttonIndex]].justUpdated = false;
+    if (htc.dashValues[buttonValues[buttonIndex]].justUpdated) {
+      // if (key[buttonIndex].htEntity.isValueNew()) {
+        key[buttonIndex].drawValue(key[buttonIndex].htEntity.getValue());
+        Serial.printf("Drawing %f\n", key[buttonIndex].htEntity.getValue());
+      // }
+      //key[buttonIndex].drawValue(htc.dashValues[buttonValues[buttonIndex]].scaled_value);
+    }
+
+    if (millis() > key[buttonIndex].pressedTime + HaltechButton::longPressTime) {
+
     }
 
     delay(3); // UI debouncing

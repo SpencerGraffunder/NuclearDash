@@ -1,6 +1,21 @@
 #include "haltech_can.h"
 #include "main.h"
-#include <CAN.h>
+#include <SPI.h>
+#include <mcp_can.h>
+#include "screen.h"
+
+SPIClass* customSPI = new SPIClass(HSPI);
+
+MCP_CAN CAN0(customSPI, CS_PIN);
+
+unsigned long KAinterval = 150;             // 50ms interval for keep aliv frame
+unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info frame
+unsigned long KAintervalMillis = 0;         // storage for millis counter
+unsigned long ButtonInfoIntervalMillis = 0; // storage for millis counter
+
+long unsigned int rxId; // storage for can data
+unsigned char len = 0;  // storage for can data
+unsigned char rxBuf[8]; // storage for can data
 
 const char* ht_names[] = {
     "RPM",
@@ -33,7 +48,8 @@ const char* ht_names[] = {
     "Ignition Angle Bank 1",
     "Wideband Overall",
     "Gear",
-    "Water Injection Advanced Solenoid Duty Cycle"
+    "Water Injection Advanced Solenoid Duty Cycle",
+    "None"
 };
 
 const char* ht_names_short[] = {
@@ -67,7 +83,8 @@ const char* ht_names_short[] = {
     "IgnAngleB1",
     "WBOverall",
     "Gear",
-    "WaterInjDC"
+    "WaterInjDC",
+    "None"
 };
 
 HaltechCan::HaltechCan() : lastProcessTime(0) {
@@ -105,22 +122,30 @@ HaltechCan::HaltechCan() : lastProcessTime(0) {
 }
 
 bool HaltechCan::begin(long baudRate) {
-    
-    if (!CAN.begin(baudRate)) {
-        DEBUG("Starting CAN failed!\n");
-        return false;
-    }
-    
-    // Set CAN pins for ESP32
-    CAN.setPins(13, 33); // RX, TX
-    
+    customSPI->setFrequency(100000);
+    customSPI->begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
+    delay(1000);
+
+    // initialize canbus with 1000kbit and 16mhz xtal
+    if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
+        Serial.println("MCP2515 Initialized Successfully!");
+    else
+        Serial.println("Error Initializing MCP2515...");
+
+    // Set operation mode to normal so the MCP2515 sends acks to received data.
+    CAN0.setMode(MCP_NORMAL);
+
+
+    pinMode(CAN0_INT, INPUT);     // set INT pin to be an input
+    digitalWrite(CAN0_INT, HIGH); // set INT pin high to enable interna pullup
+
     DEBUG("Haltech CAN initialized\n");
     return true;
 }
 
 void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset) {
     unsigned long update_interval = (frequency > 0) ? (1000 / frequency) : 0;
-    values[name] = {can_id, start_byte, end_byte, incomingUnit, frequency, scale_factor, offset, update_interval, 0, 0.0f, false};
+    dashValues[name] = {can_id, start_byte, end_byte, incomingUnit, scale_factor, offset, update_interval, 0, 0.0f, false};
 }
 
 uint32_t HaltechCan::extractValue(const uint8_t* buffer, uint8_t start_byte, uint8_t end_byte) {
@@ -132,25 +157,132 @@ uint32_t HaltechCan::extractValue(const uint8_t* buffer, uint8_t start_byte, uin
 }
 
 void HaltechCan::process() {
-    unsigned long currentTime = millis();
+    unsigned long currentMillis = millis(); // Get current time in milliseconds
 
-    if (CAN.parsePacket()) {
-        uint32_t packetId = CAN.packetId();
-        
-        for (HaltechDisplayType_e type = HT_RPM; type < HT_NONE; type = (HaltechDisplayType_e)(type + 1)) {
-            if (packetId == values[type].can_id && (currentTime - values[type].last_update_time >= values[type].update_interval)) {
-                uint8_t buffer[8];
-                int bytesRead = CAN.readBytes(buffer, 8);
-                
-                if (bytesRead >= values[type].end_byte + 1) {
-                    uint32_t raw_value = extractValue(buffer, values[type].start_byte, values[type].end_byte);
-                    float scaled_value = raw_value * values[type].scale_factor + values[type].offset;
-                    DEBUG("%s: %.2f\n", ht_names[type], scaled_value);
-                    values[type].last_update_time = currentTime;
-                    values[type].scaled_value = scaled_value;
-                    values[type].justUpdated = true;
-                }
-            }
-        }
+    // Execute keepalive frame every 50 ms
+    if (currentMillis - KAintervalMillis >= KAinterval)
+    {
+        KAintervalMillis = currentMillis;
+        SendKeepAliveDemo();
+        //Serial.println("ka");
     }
+
+    // Execute buttoninfo frame every 30 ms
+    if (currentMillis - ButtonInfoIntervalMillis >= ButtonInfoInterval)
+    {
+        ButtonInfoIntervalMillis = currentMillis;
+        SendButtonInfoDemo();
+        //Serial.println("bi");
+    }
+
+    // read can buffer when interrupted and jump to canread for processing.
+    if (!digitalRead(CAN0_INT)) // If CAN0_INT pin is low, read receive buffer
+    {
+        CAN0.readMsgBuf(&rxId, &len, rxBuf); // Read data: len = data length, buf = data byte(s)
+        canReadDemo();                           // execute canRead function to negotiate with ecu
+        //Serial.println("read");
+    }
+}
+
+void HaltechCan::canReadDemo()
+{
+  // CAN Input from Haltech canbus
+  byte txBuf[8] = {0};
+
+  // Serial.printf("ID: 0x%02X, Len: 0x%02X Data: ", rxId, len);
+  // for (int i = 0; i < 8; i++) {
+  //   Serial.print(rxBuf[i], HEX);
+  //   Serial.print(" ");
+  // }
+  // Serial.println();
+
+  for (int i = 0; i < HT_NONE; i++) {
+    HaltechDashValue dashVal = dashValues[(HaltechDisplayType_e)i];
+    if (dashVal.can_id == rxId) {
+      uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
+      dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
+      //Serial.printf("%s: raw: %lu, scaled: %f\n", ht_names_short[(HaltechDisplayType_e)i], rawVal, dashVal.scaled_value);
+      if (i == HT_MANIFOLD_PRESSURE) {
+        Serial.printf("Manifold Pressure: %f PSI\n", dashVal.scaled_value * 0.1450377f - 14.7f);
+        // for (int j = 0; j < 16; j++) {
+        //   if (key->htEntity.type == HT_MANIFOLD_PRESSURE) {
+            key->htEntity.updateValue(dashVal.scaled_value);
+        //   }
+        // }
+      }
+    }
+  }
+
+  // Keypad Configuration Section
+  if (rxId == 0x60C)
+  {
+    if ((rxBuf[0]) == 0x22)
+    {
+      txBuf[0] = 0x60;
+      txBuf[1] = (rxBuf[1]);
+      txBuf[2] = (rxBuf[2]);
+      txBuf[3] = (rxBuf[3]);
+    }
+    else if ((rxBuf[0]) == 0x42)
+    {
+      txBuf[0] = 0x43;
+      txBuf[1] = (rxBuf[1]);
+      txBuf[2] = (rxBuf[2]);
+      txBuf[3] = (rxBuf[3]);
+
+      if ((txBuf[1] == 0x18) && (txBuf[2] == 0x10)) {
+        if (txBuf[3] == 0x01)
+        {
+          txBuf[4] = 0x07;
+          txBuf[5] = 0x03;
+        } else if (txBuf[3] == 0x02) {
+          txBuf[4] = 0x48;
+          txBuf[5] = 0x33;
+        } else if (txBuf[3] == 0x03) {
+          txBuf[4] = 0x01;
+        } else if (txBuf[3] == 0x04) {
+          txBuf[4] = 0xCF;
+          txBuf[5] = 0xB8;
+          txBuf[6] = 0x19;
+          txBuf[7] = 0x0C;
+        }
+      }
+      else if ((txBuf[1] == 0x00) && (txBuf[2] == 0x18) && (txBuf[3] == 0x01))
+      {
+        txBuf[4] = 0x8C;
+        txBuf[5] = 0x01;
+        txBuf[7] = 0x40;
+      }
+    }
+    else if (((rxBuf[0]) == 0x00) && ((rxBuf[7]) == 0xC8))
+    {
+      txBuf[0] = 0x80;
+      txBuf[4] = 0x01;
+      txBuf[6] = 0x04;
+      txBuf[7] = 0x05;
+    }
+    CAN0.sendMsgBuf(0x58C, 0x00, 0x08, txBuf);
+  }
+}
+
+const uint8_t nButtons2 = 16;
+HaltechDisplayType_e buttonValues2[nButtons2] = {HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
+
+void HaltechCan::SendButtonInfoDemo()
+{
+  byte ButtonInfo[3];            // declare an array for 3 bytes used for key pressed information
+  //Serial.printf("button 1: %d\n", (int)dashValues[buttonValues2[0]].scaled_value);
+
+  for(int i = 0; i < 16; i++) {
+    bitWrite(ButtonInfo[i/8], i%8, (int)dashValues[buttonValues2[i]].scaled_value);
+  }
+
+  ButtonInfo[2] = 0;                        // byte 3 filled with 0
+  CAN0.sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at adres 18D
+}
+
+void HaltechCan::SendKeepAliveDemo()
+{                                          // send keep alive frame
+  byte KeepAlive[1] = {5};                 // frame dat is 0x05 for byte 0
+  CAN0.sendMsgBuf(0x70C, 0, 1, KeepAlive); // send the frame at 70D
 }

@@ -4,8 +4,30 @@
 ***************************************************************************************/
 
 #include "../../include/main.h"
+#include "haltech_button.h"
 
-TFT_eSPI_Button::TFT_eSPI_Button(void) {
+HaltechScreenEntity::HaltechScreenEntity(HaltechDisplayType_e type) {
+    this->type = type;
+}
+
+float HaltechScreenEntity::getValue() {
+    return value;
+}
+
+std::string HaltechScreenEntity::getValueString(uint8_t decimalPlaces) {
+    return std::string(value, decimalPlaces);
+}
+
+void HaltechScreenEntity::updateValue(float value) {
+    this->value = value;
+    Serial.println("updating val");
+}
+
+bool HaltechScreenEntity::isButtonStatusOn(buttonStatusColor_e color) {
+    return buttonStatus[color] == BUTTON_STATUS_ON;
+}
+
+HaltechButton::HaltechButton(void) : htEntity(HaltechScreenEntity(HT_NONE)) {
   _gfx       = nullptr;
   _xd        = 0;
   _yd        = 0;
@@ -16,14 +38,14 @@ TFT_eSPI_Button::TFT_eSPI_Button(void) {
 }
 
 // Classic initButton() function: pass center & size
-void TFT_eSPI_Button::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
 {
   // Tweak arguments and pass to the newer initButtonUL() function...
-  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, textsize);
+  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, textsize, htEntity);
 }
 
 // Newer function instead accepts upper-left corner & size
-void TFT_eSPI_Button::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize)
+void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
 {
   _x1            = x1;
   _y1            = y1;
@@ -34,24 +56,27 @@ void TFT_eSPI_Button::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16
   _textcolor     = textcolor;
   _textsize      = textsize;
   _gfx           = gfx;
+  this->htEntity = htEntity;
+  strncpy(_label, ht_names_short[htEntity.type], sizeof(_label) - 1);
+  _label[sizeof(_label) - 1] = '\0';
 }
 
 // Adjust text datum and x, y deltas
-void TFT_eSPI_Button::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum)
+void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum)
 {
   _xd        = x_delta;
   _yd        = y_delta;
   _textdatum = datum;
 }
 
-void TFT_eSPI_Button::drawValue(float val) {
+void HaltechButton::drawValue(float val) {
   String valStr = String(val, 2);
   _gfx->drawString(valStr, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
   lastVal = val;
   // this->htEntity.clearValueNew();
 }
 
-void TFT_eSPI_Button::drawButton(bool inverted, String long_name) {
+void HaltechButton::drawButton(bool inverted, String long_name) {
   uint16_t fill, outline, text;
 
   if(!inverted) {
@@ -95,16 +120,16 @@ void TFT_eSPI_Button::drawButton(bool inverted, String long_name) {
   }
 }
 
-bool TFT_eSPI_Button::contains(int16_t x, int16_t y) {
+bool HaltechButton::contains(int16_t x, int16_t y) {
   return ((x >= _x1) && (x < (_x1 + _w)) &&
           (y >= _y1) && (y < (_y1 + _h)));
 }
 
-void TFT_eSPI_Button::press(bool p) {
+void HaltechButton::press(bool p) {
   laststate = currstate;
   currstate = p;
 }
 
-bool TFT_eSPI_Button::isPressed()    { return currstate; }
-bool TFT_eSPI_Button::justPressed()  { return (currstate && !laststate); }
-bool TFT_eSPI_Button::justReleased() { return (!currstate && laststate); }
+bool HaltechButton::isPressed()    { return currstate; }
+bool HaltechButton::justPressed()  { return (currstate && !laststate); }
+bool HaltechButton::justReleased() { return (!currstate && laststate); }

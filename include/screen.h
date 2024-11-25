@@ -23,6 +23,7 @@
 
 #include <SPI.h>
 #include <TFT_eSPI.h>      // Hardware-specific library
+#include "haltech_button.h"
 
 extern TFT_eSPI tft; // Invoke custom library
 
@@ -71,7 +72,7 @@ extern char keyLabel[15][5];
 extern uint16_t keyColor[15];
 
 // Invoke the TFT_eSPI button class and create all the button objects
-extern TFT_eSPI_Button key[16];
+extern HaltechButton key[16];
 
 //------------------------------------------------------------------------------------------
 
