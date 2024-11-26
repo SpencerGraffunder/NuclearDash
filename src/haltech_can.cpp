@@ -204,11 +204,7 @@ void HaltechCan::canReadDemo()
       //Serial.printf("%s: raw: %lu, scaled: %f\n", ht_names_short[(HaltechDisplayType_e)i], rawVal, dashVal.scaled_value);
       if (i == HT_MANIFOLD_PRESSURE) {
         Serial.printf("Manifold Pressure: %f PSI\n", dashVal.scaled_value * 0.1450377f - 14.7f);
-        // for (int j = 0; j < 16; j++) {
-        //   if (key->htEntity.type == HT_MANIFOLD_PRESSURE) {
-            key->htEntity.updateValue(dashVal.scaled_value);
-        //   }
-        // }
+        key->updateValue(dashVal.scaled_value);
       }
     }
   }

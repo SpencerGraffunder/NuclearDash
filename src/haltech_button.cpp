@@ -6,46 +6,36 @@
 #include "main.h"
 #include "haltech_button.h"
 
-HaltechScreenEntity::HaltechScreenEntity(HaltechDisplayType_e type) {
-    this->type = type;
-}
-
-float HaltechScreenEntity::getValue() {
+float HaltechButton::getValue() {
     return value;
 }
 
-std::string HaltechScreenEntity::getValueString(uint8_t decimalPlaces) {
+std::string HaltechButton::getValueString(uint8_t decimalPlaces) {
     return std::string(value, decimalPlaces);
 }
 
-void HaltechScreenEntity::updateValue(float value) {
+void HaltechButton::updateValue(float value) {
     this->value = value;
-    Serial.println("updating val");
 }
 
-bool HaltechScreenEntity::isButtonStatusOn(buttonStatusColor_e color) {
-    return buttonStatus[color] == BUTTON_STATUS_ON;
-}
-
-HaltechButton::HaltechButton(void) : htEntity(HaltechScreenEntity(HT_NONE)) {
+HaltechButton::HaltechButton(void) {
   _gfx       = nullptr;
   _xd        = 0;
   _yd        = 0;
   _textdatum = MC_DATUM;
-  _label[11]  = '\0';
   currstate = false;
   laststate = false;
 }
 
 // Classic initButton() function: pass center & size
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDisplayType_e type)
 {
   // Tweak arguments and pass to the newer initButtonUL() function...
-  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, textsize, htEntity);
+  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, textsize, type);
 }
 
 // Newer function instead accepts upper-left corner & size
-void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechScreenEntity htEntity)
+void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDisplayType_e type)
 {
   _x1            = x1;
   _y1            = y1;
@@ -56,9 +46,8 @@ void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t
   _textcolor     = textcolor;
   _textsize      = textsize;
   _gfx           = gfx;
-  this->htEntity = htEntity;
-  strncpy(_label, ht_names_short[htEntity.type], sizeof(_label) - 1);
-  _label[sizeof(_label) - 1] = '\0';
+  _type          = type;
+  displayString  = ht_names_short[type];
 }
 
 // Adjust text datum and x, y deltas
@@ -72,11 +61,9 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 void HaltechButton::drawValue(float val) {
   String valStr = String(val, 2);
   _gfx->drawString(valStr, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
-  lastVal = val;
-  // this->htEntity.clearValueNew();
 }
 
-void HaltechButton::drawButton(bool inverted, String long_name) {
+void HaltechButton::drawButton(bool inverted) {
   uint16_t fill, outline, text;
 
   if(!inverted) {
@@ -98,7 +85,7 @@ void HaltechButton::drawButton(bool inverted, String long_name) {
                     _y1 + (_h / 4));
     _gfx->setTextColor(text);
     _gfx->setTextSize(_textsize);
-    _gfx->print(_label);
+    _gfx->print(displayString.c_str());
   }
   else {
     _gfx->setTextColor(text, fill);
@@ -109,11 +96,7 @@ void HaltechButton::drawButton(bool inverted, String long_name) {
     uint16_t tempPadding = _gfx->getTextPadding();
     _gfx->setTextPadding(0);
 
-    if (long_name == "") {
-      _gfx->drawString(_label, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
-    } else {
-      _gfx->drawString(long_name, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
-    }
+    _gfx->drawString(displayString.c_str(), _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
 
     _gfx->setTextDatum(tempdatum);
     _gfx->setTextPadding(tempPadding);

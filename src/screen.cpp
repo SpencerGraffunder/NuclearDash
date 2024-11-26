@@ -113,7 +113,7 @@ void screenSetup() {
     for (uint8_t col = 0; col < nCols; col++) {
       uint8_t index = col + row * nCols;
       tft.setFreeFont(LABEL2_FONT);    
-      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, HaltechScreenEntity((HaltechDisplayType_e)(row*nRows+col)));
+      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, (HaltechDisplayType_e)(row*nRows+col));
       key[index].drawButton();
     }
   }
@@ -145,11 +145,8 @@ void screenLoop() {
       htc.dashValues[buttonValues[buttonIndex]].justUpdated = true;
     }
     if (htc.dashValues[buttonValues[buttonIndex]].justUpdated) {
-      // if (key[buttonIndex].htEntity.isValueNew()) {
-        key[buttonIndex].drawValue(key[buttonIndex].htEntity.getValue());
-        Serial.printf("Drawing %f\n", key[buttonIndex].htEntity.getValue());
-      // }
-      //key[buttonIndex].drawValue(htc.dashValues[buttonValues[buttonIndex]].scaled_value);
+      key[buttonIndex].drawValue(key[buttonIndex].getValue());
+      Serial.printf("Drawing %f\n", key[buttonIndex].getValue());
     }
 
     if (millis() > key[buttonIndex].pressedTime + HaltechButton::longPressTime) {
