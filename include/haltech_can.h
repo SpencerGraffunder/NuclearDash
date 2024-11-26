@@ -1,19 +1,7 @@
-/* 
-This class needs to:
-- When the screen updates a button state
-    - Send button updates to the ECU
-- When the ECU sends a button update
-    - Update the button state
-- When the ECU sends a value
-    - Read, convert, update the value in "dashValues"
-*/ 
-
-
 #ifndef HALTECH_CAN_H
 #define HALTECH_CAN_H
 
 #include <Arduino.h>
-#include <map>
 
 #define CS_PIN 15
 #define MOSI_PIN 14
@@ -23,9 +11,8 @@ This class needs to:
 
 #define DEBUG(x, ...) Serial.printf(x, ##__VA_ARGS__)
 
-
-
-typedef enum {
+typedef enum
+{
     HT_RPM = 0,
     HT_MANIFOLD_PRESSURE,
     HT_THROTTLE_POSITION,
@@ -60,7 +47,8 @@ typedef enum {
     HT_NONE
 } HaltechDisplayType_e;
 
-typedef enum {
+typedef enum
+{
     UNIT_RPM,
     UNIT_KPA_ABS,
     UNIT_KPA,
@@ -86,38 +74,41 @@ typedef enum {
     UNIT_CC,
     UNIT_METERS,
     UNIT_NONE,
+    UNIT_PSI,
+    UNIT_PSI_ABS,
 } HaltechUnit_e;
 
 // Each displayable field needs to have an instance of this struct
-struct HaltechDashValue {
-    uint32_t can_id;            // From Haltech's documentation
+struct HaltechDashValue
+{
+    uint32_t can_id; // From Haltech's documentation
     uint8_t start_byte;
     uint8_t end_byte;
-    HaltechUnit_e incomingUnit; // Unit that the raw data will be converted to using the scale factor and offset
-    float scale_factor;         // Factor to scale the raw data
-    float offset;               // Add? to raw data after scaling
-    unsigned long update_interval; // Interval between expected updates from the ECU
+    HaltechUnit_e incomingUnit;     // Unit that the raw data will be converted to using the scale factor and offset
+    float scale_factor;             // Multiply to scale the raw data
+    float offset;                   // Add to raw data after scaling
+    unsigned long update_interval;  // Interval between expected updates from the ECU
     unsigned long last_update_time; // Millis when last updated
-    float scaled_value; // Value after scaling has been applied
-    bool justUpdated;   // Tracks whether the display needs to be updated
+    float scaled_value;             // Value after scaling has been applied
 };
 
-class HaltechCan {
+class HaltechCan
+{
 public:
     HaltechCan();
     bool begin(long baudRate = 1000E3);
     void process();
-    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name,  HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 0.0f);
-    std::map<HaltechDisplayType_e, HaltechDashValue> dashValues;
+    void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name, HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 0.0f);
+    HaltechDashValue dashValues[HT_NONE];
 
 private:
     unsigned long lastProcessTime;
 
-    uint32_t extractValue(const uint8_t* buffer, uint8_t start_byte, uint8_t end_byte);
+    uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte);
 
-    void canReadDemo();
-    void SendButtonInfoDemo();
-    void SendKeepAliveDemo();
+    void canRead(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
+    void SendButtonInfo();
+    void SendKeepAlive();
 };
 
 #endif // HALTECH_CAN_H

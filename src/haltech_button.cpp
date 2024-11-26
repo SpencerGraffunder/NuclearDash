@@ -5,26 +5,16 @@
 
 #include "main.h"
 #include "haltech_button.h"
-
-float HaltechButton::getValue() {
-    return value;
-}
-
-std::string HaltechButton::getValueString(uint8_t decimalPlaces) {
-    return std::string(value, decimalPlaces);
-}
-
-void HaltechButton::updateValue(float value) {
-    this->value = value;
-}
+#include <sstream>
+#include <iomanip>
 
 HaltechButton::HaltechButton(void) {
   _gfx       = nullptr;
   _xd        = 0;
   _yd        = 0;
   _textdatum = MC_DATUM;
-  currstate = false;
-  laststate = false;
+  pressedState = false;
+  previousPressedState = false;
 }
 
 // Classic initButton() function: pass center & size
@@ -46,7 +36,7 @@ void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t
   _textcolor     = textcolor;
   _textsize      = textsize;
   _gfx           = gfx;
-  _type          = type;
+  type          = type;
   displayString  = ht_names_short[type];
 }
 
@@ -59,8 +49,9 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 }
 
 void HaltechButton::drawValue(float val) {
-  String valStr = String(val, 2);
-  _gfx->drawString(valStr, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
+  char buffer[10];
+  snprintf(buffer, sizeof(buffer), "%.2f", val);
+  _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
 }
 
 void HaltechButton::drawButton(bool inverted) {
@@ -109,10 +100,10 @@ bool HaltechButton::contains(int16_t x, int16_t y) {
 }
 
 void HaltechButton::press(bool p) {
-  laststate = currstate;
-  currstate = p;
+  previousPressedState = pressedState;
+  pressedState = p;
 }
 
-bool HaltechButton::isPressed()    { return currstate; }
-bool HaltechButton::justPressed()  { return (currstate && !laststate); }
-bool HaltechButton::justReleased() { return (!currstate && laststate); }
+bool HaltechButton::isPressed()    { return pressedState; }
+bool HaltechButton::justPressed()  { return (pressedState && !previousPressedState); }
+bool HaltechButton::justReleased() { return (!pressedState && previousPressedState); }

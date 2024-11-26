@@ -1,7 +1,7 @@
 #include "screen.h"
 #include "main.h"
 #include "haltech_can.h"
-
+#include "haltech_button.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 
@@ -9,8 +9,7 @@ char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
 const uint8_t nButtons = 16;
-
-HaltechDisplayType_e buttonValues[nButtons] = {
+HaltechDisplayType_e buttonDisplayTypes[nButtons] = {
   HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
@@ -141,15 +140,10 @@ void screenLoop() {
     if (key[buttonIndex].justPressed()) {
       key[buttonIndex].pressedTime = millis();
       key[buttonIndex].drawButton(true);  // draw invert
-      htc.dashValues[buttonValues[buttonIndex]].scaled_value = !htc.dashValues[buttonValues[buttonIndex]].scaled_value;
-      htc.dashValues[buttonValues[buttonIndex]].justUpdated = true;
-    }
-    if (htc.dashValues[buttonValues[buttonIndex]].justUpdated) {
-      key[buttonIndex].drawValue(key[buttonIndex].getValue());
-      Serial.printf("Drawing %f\n", key[buttonIndex].getValue());
+      htc.dashValues[buttonDisplayTypes[buttonIndex]].scaled_value = !htc.dashValues[buttonDisplayTypes[buttonIndex]].scaled_value;
     }
 
-    if (millis() > key[buttonIndex].pressedTime + HaltechButton::longPressTime) {
+    if (millis() > key[buttonIndex].pressedTime + longPressThresholdTime) {
 
     }
 
