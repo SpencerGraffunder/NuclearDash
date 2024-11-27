@@ -90,6 +90,7 @@ struct HaltechDashValue
     unsigned long update_interval;  // Interval between expected updates from the ECU
     unsigned long last_update_time; // Millis when last updated
     float scaled_value;             // Value after scaling has been applied
+    HaltechDisplayType_e type;
 };
 
 class HaltechCan

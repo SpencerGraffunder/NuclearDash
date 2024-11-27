@@ -72,7 +72,7 @@ extern char keyLabel[15][5];
 extern uint16_t keyColor[15];
 
 // Invoke the TFT_eSPI button class and create all the button objects
-extern HaltechButton key[16];
+extern HaltechButton htButtons[16];
 
 // 
 extern const uint8_t nButtons;

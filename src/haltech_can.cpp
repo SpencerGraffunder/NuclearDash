@@ -138,10 +138,10 @@ bool HaltechCan::begin(long baudRate)
   return true;
 }
 
-void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name, HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset)
+void HaltechCan::addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e type, HaltechUnit_e incomingUnit, uint16_t frequency, float scale_factor, float offset)
 {
   unsigned long update_interval = (frequency > 0) ? (1000 / frequency) : 0;
-  dashValues[name] = {can_id, start_byte, end_byte, incomingUnit, scale_factor, offset, update_interval, 0, 0.0f};
+  dashValues[type] = {can_id, start_byte, end_byte, incomingUnit, scale_factor, offset, update_interval, 0, 0.0f, type};
 }
 
 uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte)
@@ -163,7 +163,7 @@ void HaltechCan::process()
   {
     KAintervalMillis = currentMillis;
     SendKeepAlive();
-    // Serial.println("ka");
+    //Serial.println("ka");
   }
 
   // Execute buttoninfo frame every 30 ms
@@ -171,7 +171,7 @@ void HaltechCan::process()
   {
     ButtonInfoIntervalMillis = currentMillis;
     SendButtonInfo();
-    // Serial.println("bi");
+    //Serial.println("bi");
   }
 
   // read can buffer when interrupted and jump to canread for processing.
@@ -197,20 +197,26 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
   // }
   // Serial.println();
 
-  for (int i = 0; i < HT_NONE; i++)
+  bool idFound = false;
+  for (int i = 0; i < HT_NONE; i++) // loop through the enum till the last one, none
   {
-    HaltechDashValue dashVal = dashValues[(HaltechDisplayType_e)i];
-    if (dashVal.can_id == rxId)
+    HaltechDashValue& dashVal = dashValues[(HaltechDisplayType_e)i]; // actual value to draw
+    if (dashVal.can_id == rxId) // if the incoming value belongs to this dash value
     {
+      idFound = true;
       uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
       dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
-      // Serial.printf("%s: raw: %lu, scaled: %f\n", ht_names_short[(HaltechDisplayType_e)i], rawVal, dashVal.scaled_value);
-      if (i == HT_MANIFOLD_PRESSURE)
-      {
-        Serial.printf("Manifold Pressure: %f PSI\n", dashVal.scaled_value * 0.1450377f - 14.7f);
-        key->drawValue(dashVal.scaled_value);
+      Serial.printf("%s: raw: %lu, scaled: %f\n", ht_names_short[(HaltechDisplayType_e)i], rawVal, dashVal.scaled_value);
+      for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+        //Serial.printf("htb type: %u, dv type: %u\n", htButtons[buttonIndex].type, dashVal.type);
+        if (htButtons[buttonIndex].type == dashVal.type) {
+          htButtons[buttonIndex].drawValue(dashVal.scaled_value);
+        }
       }
     }
+  }
+  if (idFound = false) {
+    Serial.printf("ID: 0x%04x\n", rxId);
   }
 
   // Keypad Configuration Section
@@ -274,15 +280,19 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
 
 void HaltechCan::SendButtonInfo()
 {
-  byte ButtonInfo[3]; // declare an array for 3 bytes used for key pressed information
+  byte ButtonInfo[3]; // declare an array for 3 bytes used for htButtons pressed information
 
   for (int j = 0; j < 2; j++) {
-  {
-    for (int i = 0; i < nButtons/2; i++)
-      bitWrite(ButtonInfo[j], i, (int)dashValues[buttonDisplayTypes[i+j*8]].scaled_value);
-    }
-    Serial.printf("0x02x\n", ButtonInfo[j]);
+  static uint8_t prevButtonInfo[2] = {0}; // Local static array to store previous values
+  for (int i = 0; i < nButtons / 2; i++) {
+    bitWrite(ButtonInfo[j], i, htButtons[i + j * 8].isPressed());
   }
+  // Only print if the value has changed
+  if (ButtonInfo[j] != prevButtonInfo[j]) {
+    Serial.printf("0x%02x\n", ButtonInfo[j]);
+    prevButtonInfo[j] = ButtonInfo[j]; // Update the stored value
+  }
+}
 
   ButtonInfo[2] = 0;                        // byte 3 filled with 0
   CAN0.sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D

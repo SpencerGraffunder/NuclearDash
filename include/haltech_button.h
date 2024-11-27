@@ -33,6 +33,8 @@ public:
   void drawValue(float val);
   long pressedTime;
   bool isPressable = true;
+  bool isToggleable = false;
+  bool pressedState = false;
   HaltechDisplayType_e type;
   HaltechUnit_e convertToUnit;
 
@@ -43,7 +45,7 @@ private:
   uint16_t _w, _h;               // Width and height of button
   uint8_t _textsize, _textdatum; // Text size multiplier and text datum for button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
-  bool pressedState;
+  //bool pressedState;
   bool previousPressedState;
   bool ledStates[3]; // Store states of the 3 "LEDs" like the real keypad (green, amber, red)
   std::string displayString = "button";

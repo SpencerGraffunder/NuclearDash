@@ -36,7 +36,7 @@ void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t
   _textcolor     = textcolor;
   _textsize      = textsize;
   _gfx           = gfx;
-  type          = type;
+  this->type     = type;
   displayString  = ht_names_short[type];
 }
 
@@ -104,6 +104,8 @@ void HaltechButton::press(bool p) {
   pressedState = p;
 }
 
-bool HaltechButton::isPressed()    { return pressedState; }
+bool HaltechButton::isPressed()    {
+  return pressedState;
+}
 bool HaltechButton::justPressed()  { return (pressedState && !previousPressedState); }
 bool HaltechButton::justReleased() { return (!pressedState && previousPressedState); }

@@ -9,11 +9,11 @@ char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
 const uint8_t nButtons = 16;
-HaltechDisplayType_e buttonDisplayTypes[nButtons] = {
+HaltechDisplayType_e defaultButtonLayout[nButtons] = {
   HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
 
 // Invoke the TFT_eSPI button class and create all the button objects
-HaltechButton key[16];
+HaltechButton htButtons[16];
 
 void touch_calibrate()
 {
@@ -112,8 +112,8 @@ void screenSetup() {
     for (uint8_t col = 0; col < nCols; col++) {
       uint8_t index = col + row * nCols;
       tft.setFreeFont(LABEL2_FONT);    
-      key[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, (HaltechDisplayType_e)(row*nRows+col));
-      key[index].drawButton();
+      htButtons[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, defaultButtonLayout[row*nRows+col]);
+      htButtons[index].drawButton();
     }
   }
 }
@@ -124,26 +124,25 @@ void screenLoop() {
   // will be set true if there is a valid touch on the screen
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
 
-  // Check if any key coordinate boxes contain the touch coordinates
+  // Check if any htButtons coordinate boxes contain the touch coordinates
   for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-    if (isValidTouch && key[buttonIndex].contains(t_x, t_y)) {
-      key[buttonIndex].press(true);  // tell the button it is pressed
+    if (isValidTouch && htButtons[buttonIndex].contains(t_x, t_y)) {
+      htButtons[buttonIndex].press(true);  // tell the button it is pressed
     } else {
-      key[buttonIndex].press(false);  // tell the button it is NOT pressed
+      htButtons[buttonIndex].press(false);  // tell the button it is NOT pressed
     }
   }
 
   for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-    if (key[buttonIndex].justReleased()) {
-      key[buttonIndex].drawButton();     // draw normal
+    if (htButtons[buttonIndex].justReleased()) {
+      htButtons[buttonIndex].drawButton();     // draw normal
     }
-    if (key[buttonIndex].justPressed()) {
-      key[buttonIndex].pressedTime = millis();
-      key[buttonIndex].drawButton(true);  // draw invert
-      htc.dashValues[buttonDisplayTypes[buttonIndex]].scaled_value = !htc.dashValues[buttonDisplayTypes[buttonIndex]].scaled_value;
+    if (htButtons[buttonIndex].justPressed()) {
+      htButtons[buttonIndex].pressedTime = millis();
+      htButtons[buttonIndex].drawButton(true);  // draw invert
     }
 
-    if (millis() > key[buttonIndex].pressedTime + longPressThresholdTime) {
+    if (millis() > htButtons[buttonIndex].pressedTime + longPressThresholdTime) {
 
     }
 
