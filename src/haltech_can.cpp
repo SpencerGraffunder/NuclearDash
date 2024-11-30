@@ -245,32 +245,36 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long currentMillis = millis(); // Get current time in milliseconds
+  unsigned long currentMillis = millis();
 
-  // Execute keepalive frame every 50 ms
+  // Check for and process multiple CAN messages in a single call
+  while (!digitalRead(CAN0_INT)) // Process all pending messages
+  {
+    long unsigned int rxId;
+    unsigned char len = 0;
+    unsigned char rxBuf[8];
+    
+    // Read message
+    CAN0.readMsgBuf(&rxId, &len, rxBuf);
+    
+    // Process message immediately
+    canRead(rxId, len, rxBuf);
+    
+    // Prevent potential infinite loop
+    if (digitalRead(CAN0_INT)) break;
+  }
+
+  // Keep alive and button info timing remains the same
   if (currentMillis - KAintervalMillis >= KAinterval)
   {
     KAintervalMillis = currentMillis;
     SendKeepAlive();
-    // Serial.println("ka");
   }
 
-  // Execute buttoninfo frame every 30 ms
   if (currentMillis - ButtonInfoIntervalMillis >= ButtonInfoInterval)
   {
     ButtonInfoIntervalMillis = currentMillis;
     SendButtonInfo();
-    // Serial.println("bi");
-  }
-
-  // read can buffer when interrupted and jump to canread for processing.
-  if (!digitalRead(CAN0_INT)) // If CAN0_INT pin is low, read receive buffer
-  {
-    long unsigned int rxId;              // storage for can data
-    unsigned char len = 0;               // storage for can data
-    unsigned char rxBuf[8];              // storage for can data
-    CAN0.readMsgBuf(&rxId, &len, rxBuf); // Read data: len = data length, buf = data byte(s)
-    canRead(rxId, len, rxBuf);           // execute canRead function to negotiate with ecu
   }
 }
 
@@ -278,13 +282,7 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
 {
   // CAN Input from Haltech canbus
   byte txBuf[8] = {0};
-
-  // Serial.printf("ID: 0x%02X, Len: 0x%02X Data: ", rxId, len);
-  // for (int i = 0; i < 8; i++) {
-  //   Serial.print(rxBuf[i], HEX);
-  //   Serial.print(" ");
-  // }
-  // Serial.println();
+  static unsigned long lastTime = 0;
 
   for (int i = 0; i < HT_NONE; i++) // loop through the enum till the last one, none
   {
@@ -293,14 +291,16 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
     {
       uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
       dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
-      Serial.printf("%lu %s %f\n", millis(), dashVal.name, dashVal.scaled_value);
       for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
       {
-        // Serial.printf("htb type: %u, dv type: %u\n", htButtons[buttonIndex].type, dashVal.type);
         if (dashVal.type == htButtons[buttonIndex].dashValue->type)
         {
           htButtons[buttonIndex].drawValue(dashVal.scaled_value);
         }
+      }
+      if (dashVal.type == HT_MANIFOLD_PRESSURE) {
+        Serial.printf("%lu\n", millis()-lastTime);
+        lastTime = millis();
       }
     }
   }
