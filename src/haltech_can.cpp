@@ -213,7 +213,7 @@ HaltechCan::HaltechCan() : lastProcessTime(0)
 
 bool HaltechCan::begin(long baudRate)
 {
-  customSPI->setFrequency(100000);
+  customSPI->setFrequency(8000000);
   customSPI->begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
   delay(1000);
 
@@ -293,7 +293,7 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
     {
       uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
       dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
-      Serial.printf("%s: raw: %lu, scaled: %f\n", dashVal.name, rawVal, dashVal.scaled_value);
+      Serial.printf("%lu %s %f\n", millis(), dashVal.name, dashVal.scaled_value);
       for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
       {
         // Serial.printf("htb type: %u, dv type: %u\n", htButtons[buttonIndex].type, dashVal.type);

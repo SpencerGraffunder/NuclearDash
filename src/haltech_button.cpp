@@ -44,7 +44,11 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 void HaltechButton::drawValue(float val) {
   char buffer[10];
   snprintf(buffer, sizeof(buffer), "%.2f", val);
-  _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h*2/3) - 4 + _yd);
+
+  // Set text datum to middle center for perfect centering
+  _gfx->setTextDatum(MC_DATUM);
+  
+  _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
 }
 
 void HaltechButton::drawButton(bool inverted) {
