@@ -8,36 +8,29 @@
 #include <sstream>
 #include <iomanip>
 
-HaltechButton::HaltechButton(void) {
-  _gfx       = nullptr;
-  _xd        = 0;
-  _yd        = 0;
-  _textdatum = MC_DATUM;
-  pressedState = false;
-  previousPressedState = false;
+HaltechButton::HaltechButton()
+    : _gfx(nullptr),
+      _xd(0),
+      _yd(0),
+      _textdatum(MC_DATUM),
+      pressedState(false),
+      previousPressedState(false) 
+{
+
 }
 
-// Classic initButton() function: pass center & size
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDisplayType_e type)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue)
 {
-  // Tweak arguments and pass to the newer initButtonUL() function...
-  initButtonUL(gfx, x - (w / 2), y - (h / 2), w, h, outline, fill, textcolor, textsize, type);
-}
-
-// Newer function instead accepts upper-left corner & size
-void HaltechButton::initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDisplayType_e type)
-{
-  _x1            = x1;
-  _y1            = y1;
-  _w             = w;
-  _h             = h;
-  _outlinecolor  = outline;
-  _fillcolor     = fill;
-  _textcolor     = textcolor;
-  _textsize      = textsize;
-  _gfx           = gfx;
-  this->type     = type;
-  displayString  = ht_names_short[type];
+  _x1             = x1;
+  _y1             = y1;
+  _w              = w;
+  _h              = h;
+  _outlinecolor   = outline;
+  _fillcolor      = fill;
+  _textcolor      = textcolor;
+  _textsize       = textsize;
+  _gfx            = gfx;
+  this->dashValue = dashValue;
 }
 
 // Adjust text datum and x, y deltas
@@ -76,7 +69,7 @@ void HaltechButton::drawButton(bool inverted) {
                     _y1 + (_h / 4));
     _gfx->setTextColor(text);
     _gfx->setTextSize(_textsize);
-    _gfx->print(displayString.c_str());
+    _gfx->print(this->dashValue->short_name);
   }
   else {
     _gfx->setTextColor(text, fill);
@@ -87,7 +80,7 @@ void HaltechButton::drawButton(bool inverted) {
     uint16_t tempPadding = _gfx->getTextPadding();
     _gfx->setTextPadding(0);
 
-    _gfx->drawString(displayString.c_str(), _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
+    _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
 
     _gfx->setTextDatum(tempdatum);
     _gfx->setTextPadding(tempPadding);

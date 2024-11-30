@@ -112,7 +112,7 @@ void screenSetup() {
     for (uint8_t col = 0; col < nCols; col++) {
       uint8_t index = col + row * nCols;
       tft.setFreeFont(LABEL2_FONT);    
-      htButtons[index].initButtonUL(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, defaultButtonLayout[row*nRows+col]);
+      htButtons[index].initButton(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[row*nRows+col]);
       htButtons[index].drawButton();
     }
   }
