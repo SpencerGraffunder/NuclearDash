@@ -263,13 +263,10 @@ public:
     HaltechCan();
     bool begin(long baudRate = 1000E3);
     void process();
-    //void addValue(uint32_t can_id, uint8_t start_byte, uint8_t end_byte, HaltechDisplayType_e name, HaltechUnit_e incomingUnit, uint16_t frequency = 50, float scale_factor = 1.0f, float offset = 0.0f);
 
 private:
     unsigned long lastProcessTime;
-
     uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte);
-
     void canRead(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
     void SendButtonInfo();
     void SendKeepAlive();

@@ -217,7 +217,7 @@ bool HaltechCan::begin(long baudRate)
   customSPI->begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
   delay(1000);
 
-  // initialize canbus with 1000kbit and 16mhz xtal
+  // initialize canbus with 1000kbit and 8MHz xtal
   if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
     Serial.println("MCP2515 Initialized Successfully!");
   else
