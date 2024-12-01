@@ -119,33 +119,43 @@ void screenSetup() {
 }
 
 void screenLoop() {
-  uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+  unsigned long currentMillis = millis();
+  static unsigned long lastDebounceTime = 0;
+  const unsigned long debounceDelay = 50; // Adjust as needed
+  
+  // Non-blocking debounce
+  if (currentMillis - lastDebounceTime < debounceDelay) {
+    return; // Skip processing if not enough time has passed
+  }
 
-  // will be set true if there is a valid touch on the screen
+  uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
 
-  // Check if any htButtons coordinate boxes contain the touch coordinates
   for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-    if (isValidTouch && htButtons[buttonIndex].contains(t_x, t_y)) {
-      htButtons[buttonIndex].press(true);  // tell the button it is pressed
-    } else {
-      htButtons[buttonIndex].press(false);  // tell the button it is NOT pressed
+    bool wasPressed = htButtons[buttonIndex].isPressed();
+    bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
+    
+    // Combine touch detection and button state update
+    htButtons[buttonIndex].press(buttonContainsTouch);
+
+    // Only redraw if button state has changed
+    if (htButtons[buttonIndex].isPressed() != wasPressed) {
+      // Track pressed time for potential long press functionality
+      if (htButtons[buttonIndex].isPressed()) {
+        htButtons[buttonIndex].pressedTime = currentMillis;
+      }
+      
+      // Redraw button with appropriate state
+      htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
+    }
+
+    // Optional: Long press handling (you can expand this as needed)
+    if (htButtons[buttonIndex].isPressed() && 
+        (currentMillis - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
+      // Long press detected - add your long press handling code here
     }
   }
 
-  for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-    if (htButtons[buttonIndex].justReleased()) {
-      htButtons[buttonIndex].drawButton();     // draw normal
-    }
-    if (htButtons[buttonIndex].justPressed()) {
-      htButtons[buttonIndex].pressedTime = millis();
-      htButtons[buttonIndex].drawButton(true);  // draw invert
-    }
-
-    if (millis() > htButtons[buttonIndex].pressedTime + longPressThresholdTime) {
-
-    }
-
-    delay(3); // UI debouncing
-  }
+  // Update last debounce time
+  lastDebounceTime = currentMillis;
 }
