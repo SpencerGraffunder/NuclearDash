@@ -108,11 +108,29 @@ void screenSetup() {
   uint8_t nRows = 4;
   uint16_t buttonWidth = TFT_HEIGHT / nCols;
   uint16_t buttonHeight = TFT_WIDTH / nRows;
+
+  int i = -1;
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_MANIFOLD_PRESSURE], UNIT_PSI);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_RPM], UNIT_RPM);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_THROTTLE_POSITION], UNIT_PERCENT);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_COOLANT_TEMPERATURE], UNIT_FAHRENHEIT);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_OIL_PRESSURE], UNIT_PSI);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_OIL_TEMPERATURE], UNIT_FAHRENHEIT);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_WIDEBAND_OVERALL], UNIT_LAMBDA);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_AIR_TEMPERATURE], UNIT_FAHRENHEIT);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_BOOST_CONTROL_OUTPUT], UNIT_PERCENT);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_TARGET_BOOST_LEVEL], UNIT_PSI);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_ECU_TEMPERATURE], UNIT_CELSIUS);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_BATTERY_VOLTAGE], UNIT_VOLTS);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_INTAKE_CAM_ANGLE_1], UNIT_DEGREES);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_VEHICLE_SPEED], UNIT_MPH);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_TOTAL_FUEL_USED], UNIT_GALLONS);
+  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_KNOCK_LEVEL_1], UNIT_DB);
+
   for (uint8_t row = 0; row < nRows; row++) {
     for (uint8_t col = 0; col < nCols; col++) {
       uint8_t index = col + row * nCols;
-      tft.setFreeFont(LABEL2_FONT);    
-      htButtons[index].initButton(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[row*nRows+col]);
+      // htButtons[index].initButton(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[row*nRows+col]);
       htButtons[index].drawButton();
     }
   }

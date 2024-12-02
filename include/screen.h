@@ -47,7 +47,7 @@ extern TFT_eSPI tft; // Invoke custom library
 #define KEY_TEXTSIZE 1   // Font size multiplier
 
 // Using two fonts since numbers are nice when bold
-#define LABEL1_FONT &FreeSansOblique12pt7b // Key label font 1
+#define LABEL1_FONT &FreeMonoBold12pt7b // Key label font 1
 #define LABEL2_FONT &FreeMono9pt7b    // Key label font 2
 
 // Numeric display box size and location

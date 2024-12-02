@@ -6,6 +6,7 @@
 #include "main.h"
 #include "haltech_button.h"
 #include <sstream>
+#include "screen.h"
 #include <iomanip>
 
 HaltechButton::HaltechButton()
@@ -19,7 +20,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit)
 {
   _x1             = x1;
   _y1             = y1;
@@ -31,6 +32,7 @@ void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w
   _textsize       = textsize;
   _gfx            = gfx;
   this->dashValue = dashValue;
+  this->displayUnit = unit;
 }
 
 // Adjust text datum and x, y deltas
@@ -41,9 +43,12 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
   _textdatum = datum;
 }
 
-void HaltechButton::drawValue(float val) {
+void HaltechButton::drawValue() {
   char buffer[10];
-  snprintf(buffer, sizeof(buffer), "%.2f", val);
+
+  float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
+
+  snprintf(buffer, sizeof(buffer), "%.1f", convertedValue);
 
   // Set text datum to middle center for perfect centering
   _gfx->setTextDatum(MC_DATUM);
@@ -53,6 +58,8 @@ void HaltechButton::drawValue(float val) {
 
 void HaltechButton::drawButton(bool inverted) {
   uint16_t fill, outline, text;
+
+  tft.setFreeFont(LABEL2_FONT);
 
   if(!inverted) {
     fill    = _fillcolor;
@@ -74,8 +81,7 @@ void HaltechButton::drawButton(bool inverted) {
     _gfx->setTextColor(text);
     _gfx->setTextSize(_textsize);
     _gfx->print(this->dashValue->short_name);
-  }
-  else {
+  } else {
     _gfx->setTextColor(text, fill);
     _gfx->setTextSize(_textsize);
 
@@ -86,8 +92,13 @@ void HaltechButton::drawButton(bool inverted) {
 
     _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
 
+    //_gfx->drawString(unitDisplayStrings[this->dashValue->incomingUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
+    _gfx->drawString(unitDisplayStrings[this->displayUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
+
     _gfx->setTextDatum(tempdatum);
     _gfx->setTextPadding(tempPadding);
+
+    tft.setFreeFont(LABEL1_FONT);
   }
 }
 
@@ -101,7 +112,7 @@ void HaltechButton::press(bool p) {
   pressedState = p;
 }
 
-bool HaltechButton::isPressed()    {
+bool HaltechButton::isPressed() {
   return pressedState;
 }
 bool HaltechButton::justPressed()  { return (pressedState && !previousPressedState); }

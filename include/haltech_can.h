@@ -230,12 +230,22 @@ typedef enum
     UNIT_MM,
     UNIT_BIT_FIELD,
     UNIT_CC,
-    UNIT_METERS,
-    UNIT_NONE,
+    UNIT_METERS, //last of possible incoming units
+    UNIT_DEG_S, 
     UNIT_PSI,
     UNIT_PSI_ABS,
-    UNIT_DEG_S,
+    UNIT_AFR,
+    UNIT_CELSIUS,
+    UNIT_FAHRENHEIT,
+    UNIT_MPH,
+    UNIT_GALLONS,
+    UNIT_FEET,
+    UNIT_INCHES,
+    UNIT_MILES,
+    UNIT_NONE,
 } HaltechUnit_e;
+
+extern const char* unitDisplayStrings[];
 
 // Each displayable field needs to have an instance of this struct
 struct HaltechDashValue
@@ -253,6 +263,8 @@ struct HaltechDashValue
     bool isSigned;
     unsigned long last_update_time; // Millis when last updated
     float scaled_value;             // Value after scaling has been applied
+
+    float convertToUnit(HaltechUnit_e toUnit);
 };
 
 extern HaltechDashValue dashValues[HT_NONE];
