@@ -3,13 +3,11 @@
 
 #include <Arduino.h>
 
-#define CS_PIN 15
-#define MOSI_PIN 14
-#define MISO_PIN 35
-#define SCK_PIN 12
-#define CAN0_INT 5
-
-#define DEBUG(x, ...) Serial.printf(x, ##__VA_ARGS__)
+// #define CS_PIN 15
+// #define MOSI_PIN 14
+// #define MISO_PIN 35
+// #define SCK_PIN 12
+// #define CAN0_INT 5
 
 typedef enum
 {
@@ -279,9 +277,9 @@ public:
 private:
     unsigned long lastProcessTime;
     uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte);
-    void canRead(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
-    void SendButtonInfo();
-    void SendKeepAlive();
+    void processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
+    // void SendButtonInfo();
+    // void SendKeepAlive();
 };
 
 #endif // HALTECH_CAN_H
