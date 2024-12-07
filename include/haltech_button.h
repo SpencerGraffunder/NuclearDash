@@ -44,6 +44,7 @@ private:
   //bool pressedState;
   bool previousPressedState;
   bool ledStates[3]; // Store states of the 3 "LEDs" like the real keypad (green, amber, red)
+  unsigned long lastDrawTime = 0;
 };
 
 #endif // __HALTECH_BUTTON_H

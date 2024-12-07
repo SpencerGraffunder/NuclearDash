@@ -44,6 +44,10 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 }
 
 void HaltechButton::drawValue() {
+  // // Prevent drawing too frequently
+  // if (lastDrawTime + 1000 > millis()) return;
+  // lastDrawTime = millis();
+
   char buffer[10];
 
   float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
@@ -87,16 +91,18 @@ void HaltechButton::drawButton(bool inverted) {
 
     uint8_t tempdatum = _gfx->getTextDatum();
     _gfx->setTextDatum(_textdatum);
-    uint16_t tempPadding = _gfx->getTextPadding();
+    //uint16_t tempPadding = _gfx->getTextPadding();
     _gfx->setTextPadding(0);
 
+    // Draw name of value on top
     _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
-
-    //_gfx->drawString(unitDisplayStrings[this->dashValue->incomingUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
+    // Draw units on bottom
     _gfx->drawString(unitDisplayStrings[this->displayUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
+    // Let CAN update call drawValue for the actual value
 
     _gfx->setTextDatum(tempdatum);
-    _gfx->setTextPadding(tempPadding);
+    //_gfx->setTextPadding(tempPadding);
+    _gfx->setTextPadding(this->_w - 2);
 
     tft.setFreeFont(LABEL1_FONT);
   }
