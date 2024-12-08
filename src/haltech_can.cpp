@@ -1,56 +1,53 @@
 #include "haltech_can.h"
-#include "main.h"
-//#include <SPI.h>
-//#include <mcp_can.h>
 #include "driver/gpio.h"
 #include "driver/twai.h"
 #include "screen.h"
 #include "haltech_dash_values_init.h"
 
 const char* unitDisplayStrings[] = {
-    "RPM",           // UNIT_RPM
-    "kPa (abs)",     // UNIT_KPA_ABS
-    "kPa",           // UNIT_KPA
-    "%",             // UNIT_PERCENT
-    "Deg",           // UNIT_DEGREES
-    "km/h",          // UNIT_KPH
-    "m/s",           // UNIT_MS
-    "Lambda",        // UNIT_LAMBDA
-    "Raw",           // UNIT_RAW
-    "dB",            // UNIT_DB
-    "m/s^2",         // UNIT_MPS2
-    "Boolean",       // UNIT_BOOLEAN
-    "CCPM",          // UNIT_CCPM
-    "V",             // UNIT_VOLTS
-    "K",             // UNIT_K
-    "PPM",           // UNIT_PPM
-    "g/m^3",         // UNIT_GPM3
-    "L",             // UNIT_LITERS
-    "s",             // UNIT_SECONDS
-    "Enum",          // UNIT_ENUM
-    "mm",            // UNIT_MM
-    "Bit Field",     // UNIT_BIT_FIELD
-    "cc",            // UNIT_CC
-    "m",             // UNIT_METERS
-    "PSI",           // UNIT_PSI
-    "PSI (abs)",     // UNIT_PSI_ABS
-    "Deg/s",         // UNIT_DEG_S
-    "AFR",           // UNIT_AFR
-    "C",             // UNIT_CELSIUS
-    "F",             // UNIT_FAHRENHEIT
-    "MPH",           // UNIT_MPH
-    "Gal",           // UNIT_GALLONS
-    "",              // UNIT_NONE
+    "RPM",       // UNIT_RPM
+    "kPa (abs)", // UNIT_KPA_ABS
+    "kPa",       // UNIT_KPA
+    "%",         // UNIT_PERCENT
+    "Deg",       // UNIT_DEGREES
+    "km/h",      // UNIT_KPH
+    "m/s",       // UNIT_MS
+    "Lambda",    // UNIT_LAMBDA
+    "Raw",       // UNIT_RAW
+    "dB",        // UNIT_DB
+    "m/s^2",     // UNIT_MPS2
+    "Boolean",   // UNIT_BOOLEAN
+    "CCPM",      // UNIT_CCPM
+    "V",         // UNIT_VOLTS
+    "K",         // UNIT_K
+    "PPM",       // UNIT_PPM
+    "g/m^3",     // UNIT_GPM3
+    "L",         // UNIT_LITERS
+    "s",         // UNIT_SECONDS
+    "Enum",      // UNIT_ENUM
+    "mm",        // UNIT_MM
+    "Bit Field", // UNIT_BIT_FIELD
+    "cc",        // UNIT_CC
+    "m",         // UNIT_METERS
+    "PSI",       // UNIT_PSI
+    "PSI (abs)", // UNIT_PSI_ABS
+    "Deg/s",     // UNIT_DEG_S
+    "AFR",       // UNIT_AFR
+    "C",         // UNIT_CELSIUS
+    "F",         // UNIT_FAHRENHEIT
+    "MPH",       // UNIT_MPH
+    "Gal",       // UNIT_GALLONS
+    "MPG",       // UNIT_MPG
+    "Foot",      // UNIT_FEET
+    "Inch",      // UNIT_INCHES
+    "Mile"       // UNIT_MILES
+    "",          // UNIT_NONE
 };
 
-//SPIClass *customSPI = new SPIClass(HSPI);
-
-//MCP_CAN CAN0(customSPI, CS_PIN);
-
-// unsigned long KAinterval = 150;             // 50ms interval for keep aliv frame
-// unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info frame
-// unsigned long KAintervalMillis = 0;         // storage for millis counter
-// unsigned long ButtonInfoIntervalMillis = 0; // storage for millis counter
+unsigned long KAinterval = 150;             // 50ms interval for keep aliv frame
+unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info frame
+unsigned long KAintervalMillis = 0;         // storage for millis counter
+unsigned long ButtonInfoIntervalMillis = 0; // storage for millis counter
 
 float HaltechDashValue::convertToUnit(HaltechUnit_e toUnit)
 {
@@ -176,20 +173,7 @@ HaltechCan::HaltechCan() : lastProcessTime(0)
 
 bool HaltechCan::begin(long baudRate)
 {
-  // customSPI->setFrequency(8000000);
-  // customSPI->begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
   delay(1000);
-
-  // initialize canbus with 1000kbit and 8MHz xtal
-  // if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
-  //   Serial.println("MCP2515 Initialized Successfully!");
-  // else
-  //   Serial.println("Error Initializing MCP2515...");
-
-  // // Set operation mode to normal so the MCP2515 sends acks to received data.
-  // CAN0.setMode(MCP_NORMAL);
-  // pinMode(CAN0_INT, INPUT);     // set INT pin to be an input
-  // digitalWrite(CAN0_INT, HIGH); // set INT pin high to enable interna pullup
 
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
@@ -226,28 +210,12 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  // Check for and process multiple CAN messages in a single call
-  // while (!digitalRead(CAN0_INT)) // Process all pending messages
-  // {
-  //   long unsigned int rxId;
-  //   unsigned char len = 0;
-  //   unsigned char rxBuf[8];
-
-  //   // Read message
-  //   CAN0.readMsgBuf(&rxId, &len, rxBuf);
-
-  //   // Process message immediately
-  //   processCANData(rxId, len, rxBuf);
-
-  //   // Prevent potential infinite loop
-  //   if (digitalRead(CAN0_INT))
-  //     break;
-  // }
-
-  while (true) {
+  const unsigned int maxProcessLoops = 100;
+  unsigned int processLoops;
+  while (processLoops < maxProcessLoops) { // escape with breaks
     twai_message_t message;
     esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(10)); // Short timeout to check for messages
-    printf("TWAI: 0x%04x\n", result);
+    //printf("TWAI: 0x%04x\n", result);
 
     // Break the loop if no message is available
     if (result != ESP_OK) {
@@ -268,18 +236,18 @@ void HaltechCan::process()
                     message.data);
   }
 
-  // // Keep alive and button info timing remains the same
-  // if (currentMillis - KAintervalMillis >= KAinterval)
-  // {
-  //   KAintervalMillis = currentMillis;
-  //   SendKeepAlive();
-  // }
+  // Keep alive and button info timing remains the same
+  if (millis() - KAintervalMillis >= KAinterval)
+  {
+    KAintervalMillis = millis();
+    SendKeepAlive();
+  }
 
-  // if (currentMillis - ButtonInfoIntervalMillis >= ButtonInfoInterval)
-  // {
-  //   ButtonInfoIntervalMillis = currentMillis;
-  //   SendButtonInfo();
-  // }
+  if (millis() - ButtonInfoIntervalMillis >= ButtonInfoInterval)
+  {
+    ButtonInfoIntervalMillis = millis();
+    SendButtonInfo();
+  }
 }
 
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
@@ -302,98 +270,114 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
           htButtons[buttonIndex].drawValue();
         }
       }
-      if (dashVal.type == HT_MANIFOLD_PRESSURE)
-      {
-        //Serial.printf("%lu\n", millis() - lastTime);
-        lastTime = millis();
-      }
+      // if (dashVal.type == HT_MANIFOLD_PRESSURE)
+      // {
+      //   Serial.printf("%lu\n", millis() - lastTime);
+      //   lastTime = millis();
+      // }
     }
   }
 
-  // // Keypad
-  // if (rxId == 0x60C)
-  // {
-  //   if ((rxBuf[0]) == 0x22)
-  //   {
-  //     txBuf[0] = 0x60;
-  //     txBuf[1] = (rxBuf[1]);
-  //     txBuf[2] = (rxBuf[2]);
-  //     txBuf[3] = (rxBuf[3]);
-  //   }
-  //   else if ((rxBuf[0]) == 0x42)
-  //   {
-  //     txBuf[0] = 0x43;
-  //     txBuf[1] = (rxBuf[1]);
-  //     txBuf[2] = (rxBuf[2]);
-  //     txBuf[3] = (rxBuf[3]);
+  // Keypad
+  if (rxId == 0x60C)
+  {
+    if ((rxBuf[0]) == 0x22)
+    {
+      txBuf[0] = 0x60;
+      txBuf[1] = (rxBuf[1]);
+      txBuf[2] = (rxBuf[2]);
+      txBuf[3] = (rxBuf[3]);
+    }
+    else if ((rxBuf[0]) == 0x42)
+    {
+      txBuf[0] = 0x43;
+      txBuf[1] = (rxBuf[1]);
+      txBuf[2] = (rxBuf[2]);
+      txBuf[3] = (rxBuf[3]);
 
-  //     if ((txBuf[1] == 0x18) && (txBuf[2] == 0x10))
-  //     {
-  //       if (txBuf[3] == 0x01)
-  //       {
-  //         txBuf[4] = 0x07;
-  //         txBuf[5] = 0x03;
-  //       }
-  //       else if (txBuf[3] == 0x02)
-  //       {
-  //         txBuf[4] = 0x48;
-  //         txBuf[5] = 0x33;
-  //       }
-  //       else if (txBuf[3] == 0x03)
-  //       {
-  //         txBuf[4] = 0x01;
-  //       }
-  //       else if (txBuf[3] == 0x04)
-  //       {
-  //         txBuf[4] = 0xCF;
-  //         txBuf[5] = 0xB8;
-  //         txBuf[6] = 0x19;
-  //         txBuf[7] = 0x0C;
-  //       }
-  //     }
-  //     else if ((txBuf[1] == 0x00) && (txBuf[2] == 0x18) && (txBuf[3] == 0x01))
-  //     {
-  //       txBuf[4] = 0x8C;
-  //       txBuf[5] = 0x01;
-  //       txBuf[7] = 0x40;
-  //     }
-  //   }
-  //   else if (((rxBuf[0]) == 0x00) && ((rxBuf[7]) == 0xC8))
-  //   {
-  //     txBuf[0] = 0x80;
-  //     txBuf[4] = 0x01;
-  //     txBuf[6] = 0x04;
-  //     txBuf[7] = 0x05;
-  //   }
-  //   CAN0.sendMsgBuf(0x58C, 0x00, 0x08, txBuf);
-  // }
+      if ((txBuf[1] == 0x18) && (txBuf[2] == 0x10))
+      {
+        if (txBuf[3] == 0x01)
+        {
+          txBuf[4] = 0x07;
+          txBuf[5] = 0x03;
+        }
+        else if (txBuf[3] == 0x02)
+        {
+          txBuf[4] = 0x48;
+          txBuf[5] = 0x33;
+        }
+        else if (txBuf[3] == 0x03)
+        {
+          txBuf[4] = 0x01;
+        }
+        else if (txBuf[3] == 0x04)
+        {
+          txBuf[4] = 0xCF;
+          txBuf[5] = 0xB8;
+          txBuf[6] = 0x19;
+          txBuf[7] = 0x0C;
+        }
+      }
+      else if ((txBuf[1] == 0x00) && (txBuf[2] == 0x18) && (txBuf[3] == 0x01))
+      {
+        txBuf[4] = 0x8C;
+        txBuf[5] = 0x01;
+        txBuf[7] = 0x40;
+      }
+    }
+    else if (((rxBuf[0]) == 0x00) && ((rxBuf[7]) == 0xC8))
+    {
+      txBuf[0] = 0x80;
+      txBuf[4] = 0x01;
+      txBuf[6] = 0x04;
+      txBuf[7] = 0x05;
+    }
+    sendMsgBuf(0x58C, 0x00, 0x08, txBuf);
+  }
 }
 
-// void HaltechCan::SendButtonInfo()
-// {
-//   byte ButtonInfo[3]; // declare an array for 3 bytes used for htButtons pressed information
+void HaltechCan::SendButtonInfo()
+{
+  byte ButtonInfo[3]; // declare an array for 3 bytes used for htButtons pressed information
 
-//   for (int j = 0; j < 2; j++)
-//   {
-//     static uint8_t prevButtonInfo[2] = {0}; // Local static array to store previous values
-//     for (int i = 0; i < nButtons / 2; i++)
-//     {
-//       bitWrite(ButtonInfo[j], i, htButtons[i + j * 8].isPressed());
-//     }
-//     // Only print if the value has changed
-//     if (ButtonInfo[j] != prevButtonInfo[j])
-//     {
-//       Serial.printf("0x%02x\n", ButtonInfo[j]);
-//       prevButtonInfo[j] = ButtonInfo[j]; // Update the stored value
-//     }
-//   }
+  for (int j = 0; j < 2; j++)
+  {
+    static uint8_t prevButtonInfo[2] = {0}; // Local static array to store previous values
+    for (int i = 0; i < nButtons / 2; i++)
+    {
+      bitWrite(ButtonInfo[j], i, htButtons[i + j * 8].isPressed());
+    }
+    // Only print if the value has changed
+    if (ButtonInfo[j] != prevButtonInfo[j])
+    {
+      Serial.printf("0x%02x\n", ButtonInfo[j]);
+      prevButtonInfo[j] = ButtonInfo[j]; // Update the stored value
+    }
+  }
 
-//   ButtonInfo[2] = 0;                        // byte 3 filled with 0
-//   CAN0.sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D
-// }
+  ButtonInfo[2] = 0;                        // byte 3 filled with 0
+  sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D
+}
 
-// void HaltechCan::SendKeepAlive()
-// {                                          // send keep alive frame
-//   byte KeepAlive[1] = {5};                 // frame dat is 0x05 for byte 0
-//   CAN0.sendMsgBuf(0x70C, 0, 1, KeepAlive); // send the frame at 70D
-// }
+void HaltechCan::SendKeepAlive()
+{                                          // send keep alive frame
+  byte KeepAlive[1] = {5};                 // frame dat is 0x05 for byte 0
+  sendMsgBuf(0x70C, 0, 1, KeepAlive); // send the frame at 70D
+}
+
+bool HaltechCan::sendMsgBuf(long unsigned int id, unsigned char ext, unsigned char len, byte *buf)
+{
+    twai_message_t message;
+    message.identifier = id;
+    message.extd = ext ? 1 : 0;
+    message.data_length_code = len;
+    
+    // Copy the buffer contents
+    memcpy(message.data, buf, len);
+    
+    // Send the message
+    esp_err_t result = twai_transmit(&message, pdMS_TO_TICKS(100));
+    
+    return (result == ESP_OK);
+}

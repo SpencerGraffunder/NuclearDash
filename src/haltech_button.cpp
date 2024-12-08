@@ -3,7 +3,6 @@
 ** Grabbed from Adafruit_GFX library and enhanced to handle any label font
 ***************************************************************************************/
 
-#include "main.h"
 #include "haltech_button.h"
 #include <sstream>
 #include "screen.h"

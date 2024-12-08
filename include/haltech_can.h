@@ -3,12 +3,6 @@
 
 #include <Arduino.h>
 
-// #define CS_PIN 15
-// #define MOSI_PIN 14
-// #define MISO_PIN 35
-// #define SCK_PIN 12
-// #define CAN0_INT 5
-
 typedef enum
 {
     HT_RPM = 0,
@@ -228,7 +222,7 @@ typedef enum
     UNIT_MM,
     UNIT_BIT_FIELD,
     UNIT_CC,
-    UNIT_METERS, //last of possible incoming units
+    UNIT_METERS,
     UNIT_DEG_S, 
     UNIT_PSI,
     UNIT_PSI_ABS,
@@ -237,6 +231,7 @@ typedef enum
     UNIT_FAHRENHEIT,
     UNIT_MPH,
     UNIT_GALLONS,
+    UNIT_MPG,
     UNIT_FEET,
     UNIT_INCHES,
     UNIT_MILES,
@@ -278,8 +273,9 @@ private:
     unsigned long lastProcessTime;
     uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte);
     void processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
-    // void SendButtonInfo();
-    // void SendKeepAlive();
+    void SendButtonInfo();
+    void SendKeepAlive();
+    bool sendMsgBuf(long unsigned int id, unsigned char ext, unsigned char len, byte *buf);
 };
 
 #endif // HALTECH_CAN_H

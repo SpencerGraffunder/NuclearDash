@@ -4,8 +4,6 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>      // Hardware-specific library
 #include "screen.h"
-#include "main.h"
-
 
 HaltechCan htc;
 
