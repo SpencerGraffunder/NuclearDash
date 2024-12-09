@@ -137,20 +137,13 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
+
   uint8_t nCols = 4;
   uint8_t nRows = 4;
   uint16_t buttonWidth = TFT_HEIGHT / nCols;
   uint16_t buttonHeight = TFT_WIDTH / nRows;
 
   loadLayout(tft, buttonWidth, buttonHeight);
-
-  for (uint8_t row = 0; row < nRows; row++) {
-    for (uint8_t col = 0; col < nCols; col++) {
-      uint8_t index = col + row * nCols;
-      // htButtons[index].initButton(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[row*nRows+col]);
-      htButtons[index].drawButton();
-    }
-  }
 }
 
 void screenLoop() {
@@ -195,6 +188,10 @@ void screenLoop() {
   lastDebounceTime = currentMillis;
 }
 
+// In header file, add these global arrays
+HaltechDisplayType_e currentButtonLayout[nButtons];
+HaltechUnit_e currentButtonUnits[nButtons];
+
 bool saveLayout() {
     // Ensure SPIFFS is mounted
     if (!SPIFFS.begin(true)) {
@@ -209,21 +206,11 @@ bool saveLayout() {
         return false;
     }
 
-    // Write button types
-    layoutFile.write(reinterpret_cast<const uint8_t*>(htButtons), sizeof(htButtons));
-    
     // Write display types
-    for (uint8_t i = 0; i < nButtons; i++) {
-        HaltechDisplayType_e type = htButtons[i].dashValue->type;
-        layoutFile.write(reinterpret_cast<const uint8_t*>(&type), sizeof(type));
-    }
+    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
 
     // Write units
-    HaltechUnit_e currentUnits[nButtons];
-    for (uint8_t i = 0; i < nButtons; i++) {
-        currentUnits[i] = htButtons[i].displayUnit;
-    }
-    layoutFile.write(reinterpret_cast<const uint8_t*>(currentUnits), sizeof(currentUnits));
+    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
 
     layoutFile.close();
     return true;
@@ -239,6 +226,10 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
     // Check if layout file exists
     if (!SPIFFS.exists("/button_layout.bin")) {
         Serial.println("No saved layout found. Using default.");
+        
+        // Copy default layout
+        memcpy(currentButtonLayout, defaultButtonLayout, sizeof(defaultButtonLayout));
+        memcpy(currentButtonUnits, defaultButtonUnits, sizeof(defaultButtonUnits));
         
         // Set up default layout
         for (uint8_t i = 0; i < nButtons; i++) {
@@ -265,12 +256,10 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
     }
 
     // Read display types
-    HaltechDisplayType_e savedTypes[nButtons];
-    layoutFile.read(reinterpret_cast<uint8_t*>(savedTypes), sizeof(savedTypes));
+    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
 
     // Read units
-    HaltechUnit_e savedUnits[nButtons];
-    layoutFile.read(reinterpret_cast<uint8_t*>(savedUnits), sizeof(savedUnits));
+    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
 
     layoutFile.close();
 
@@ -285,8 +274,9 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
             TFT_BLACK, 
             TFT_WHITE, 
             1, 
-            &dashValues[savedTypes[i]], 
-            savedUnits[i]);
+            &dashValues[currentButtonLayout[i]], 
+            currentButtonUnits[i]);
+      htButtons[i].drawButton();
     }
 
     return true;
