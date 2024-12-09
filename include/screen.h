@@ -83,4 +83,7 @@ void screenLoop();
 void touch_calibrate();
 void status(const char *msg);
 
+bool saveLayout();
+bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight);
+
 #endif // _SCREEN_H

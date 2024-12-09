@@ -1,49 +1,48 @@
 #include "haltech_can.h"
-#include "main.h"
-#include <SPI.h>
-#include <mcp_can.h>
+#include "driver/gpio.h"
+#include "driver/twai.h"
 #include "screen.h"
 #include "haltech_dash_values_init.h"
 
 const char* unitDisplayStrings[] = {
-    "RPM",           // UNIT_RPM
-    "kPa (abs)",     // UNIT_KPA_ABS
-    "kPa",           // UNIT_KPA
-    "%",             // UNIT_PERCENT
-    "Deg",           // UNIT_DEGREES
-    "km/h",          // UNIT_KPH
-    "m/s",           // UNIT_MS
-    "Lambda",        // UNIT_LAMBDA
-    "Raw",           // UNIT_RAW
-    "dB",            // UNIT_DB
-    "m/s^2",         // UNIT_MPS2
-    "Boolean",       // UNIT_BOOLEAN
-    "CCPM",          // UNIT_CCPM
-    "V",             // UNIT_VOLTS
-    "K",             // UNIT_K
-    "PPM",           // UNIT_PPM
-    "g/m^3",         // UNIT_GPM3
-    "L",             // UNIT_LITERS
-    "s",             // UNIT_SECONDS
-    "Enum",          // UNIT_ENUM
-    "mm",            // UNIT_MM
-    "Bit Field",     // UNIT_BIT_FIELD
-    "cc",            // UNIT_CC
-    "m",             // UNIT_METERS
-    "PSI",           // UNIT_PSI
-    "PSI (abs)",     // UNIT_PSI_ABS
-    "Deg/s",         // UNIT_DEG_S
-    "AFR",           // UNIT_AFR
-    "C",             // UNIT_CELSIUS
-    "F",             // UNIT_FAHRENHEIT
-    "MPH",           // UNIT_MPH
-    "Gal",           // UNIT_GALLONS
-    "",              // UNIT_NONE
+    "RPM",       // UNIT_RPM
+    "kPa (abs)", // UNIT_KPA_ABS
+    "kPa",       // UNIT_KPA
+    "%",         // UNIT_PERCENT
+    "Deg",       // UNIT_DEGREES
+    "km/h",      // UNIT_KPH
+    "m/s",       // UNIT_MS
+    "Lambda",    // UNIT_LAMBDA
+    "Raw",       // UNIT_RAW
+    "dB",        // UNIT_DB
+    "m/s^2",     // UNIT_MPS2
+    "Boolean",   // UNIT_BOOLEAN
+    "CCPM",      // UNIT_CCPM
+    "V",         // UNIT_VOLTS
+    "K",         // UNIT_K
+    "PPM",       // UNIT_PPM
+    "g/m^3",     // UNIT_GPM3
+    "L",         // UNIT_LITERS
+    "s",         // UNIT_SECONDS
+    "Enum",      // UNIT_ENUM
+    "mm",        // UNIT_MM
+    "Bit Field", // UNIT_BIT_FIELD
+    "cc",        // UNIT_CC
+    "m",         // UNIT_METERS
+    "PSI",       // UNIT_PSI
+    "PSI (abs)", // UNIT_PSI_ABS
+    "Deg/s",     // UNIT_DEG_S
+    "AFR",       // UNIT_AFR
+    "C",         // UNIT_CELSIUS
+    "F",         // UNIT_FAHRENHEIT
+    "MPH",       // UNIT_MPH
+    "Gal",       // UNIT_GALLONS
+    "MPG",       // UNIT_MPG
+    "Foot",      // UNIT_FEET
+    "Inch",      // UNIT_INCHES
+    "Mile"       // UNIT_MILES
+    "",          // UNIT_NONE
 };
-
-SPIClass *customSPI = new SPIClass(HSPI);
-
-MCP_CAN CAN0(customSPI, CS_PIN);
 
 unsigned long KAinterval = 150;             // 50ms interval for keep aliv frame
 unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info frame
@@ -174,23 +173,28 @@ HaltechCan::HaltechCan() : lastProcessTime(0)
 
 bool HaltechCan::begin(long baudRate)
 {
-  customSPI->setFrequency(8000000);
-  customSPI->begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
   delay(1000);
 
-  // initialize canbus with 1000kbit and 8MHz xtal
-  if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
-    Serial.println("MCP2515 Initialized Successfully!");
-  else
-    Serial.println("Error Initializing MCP2515...");
+  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
+  twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+  twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-  // Set operation mode to normal so the MCP2515 sends acks to received data.
-  CAN0.setMode(MCP_NORMAL);
+  // Install TWAI driver
+  if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
+      printf("Driver installed\n");
+  } else {
+      printf("Failed to install driver\n");
+      return false;
+  }
 
-  pinMode(CAN0_INT, INPUT);     // set INT pin to be an input
-  digitalWrite(CAN0_INT, HIGH); // set INT pin high to enable interna pullup
+  // Start TWAI driver
+  if (twai_start() == ESP_OK) {
+      printf("Driver started\n");
+  } else {
+      printf("Failed to start driver\n");
+      return false;
+  }
 
-  DEBUG("Haltech CAN initialized\n");
   return true;
 }
 
@@ -206,41 +210,47 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long currentMillis = millis();
+  const unsigned int maxProcessLoops = 100;
+  unsigned int processLoops;
+  while (processLoops < maxProcessLoops) { // escape with breaks
+    twai_message_t message;
+    esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(10)); // Short timeout to check for messages
+    //printf("TWAI: 0x%04x\n", result);
 
-  // Check for and process multiple CAN messages in a single call
-  while (!digitalRead(CAN0_INT)) // Process all pending messages
-  {
-    long unsigned int rxId;
-    unsigned char len = 0;
-    unsigned char rxBuf[8];
-
-    // Read message
-    CAN0.readMsgBuf(&rxId, &len, rxBuf);
-
-    // Process message immediately
-    canRead(rxId, len, rxBuf);
-
-    // Prevent potential infinite loop
-    if (digitalRead(CAN0_INT))
-      break;
+    // Break the loop if no message is available
+    if (result != ESP_OK) {
+        if (result == ESP_ERR_TIMEOUT) {
+            break; // No more messages
+        }
+        // More detailed error handling if needed
+        if (result == ESP_ERR_INVALID_STATE) {
+            // Handle driver not started or other state issues
+            printf("TWAI driver in invalid state\n");
+        } else {
+            printf("Error receiving message: %s\n", esp_err_to_name(result));
+        }
+        break;
+    }
+    processCANData(message.identifier, 
+                    message.data_length_code, 
+                    message.data);
   }
 
   // Keep alive and button info timing remains the same
-  if (currentMillis - KAintervalMillis >= KAinterval)
+  if (millis() - KAintervalMillis >= KAinterval)
   {
-    KAintervalMillis = currentMillis;
+    KAintervalMillis = millis();
     SendKeepAlive();
   }
 
-  if (currentMillis - ButtonInfoIntervalMillis >= ButtonInfoInterval)
+  if (millis() - ButtonInfoIntervalMillis >= ButtonInfoInterval)
   {
-    ButtonInfoIntervalMillis = currentMillis;
+    ButtonInfoIntervalMillis = millis();
     SendButtonInfo();
   }
 }
 
-void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
+void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
   // CAN Input from Haltech canbus
   byte txBuf[8] = {0};
@@ -260,15 +270,15 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
           htButtons[buttonIndex].drawValue();
         }
       }
-      if (dashVal.type == HT_MANIFOLD_PRESSURE)
-      {
-        //Serial.printf("%lu\n", millis() - lastTime);
-        lastTime = millis();
-      }
+      // if (dashVal.type == HT_MANIFOLD_PRESSURE)
+      // {
+      //   Serial.printf("%lu\n", millis() - lastTime);
+      //   lastTime = millis();
+      // }
     }
   }
 
-  // Keypad Configuration Section
+  // Keypad
   if (rxId == 0x60C)
   {
     if ((rxBuf[0]) == 0x22)
@@ -323,7 +333,7 @@ void HaltechCan::canRead(long unsigned int rxId, unsigned char len, unsigned cha
       txBuf[6] = 0x04;
       txBuf[7] = 0x05;
     }
-    CAN0.sendMsgBuf(0x58C, 0x00, 0x08, txBuf);
+    sendMsgBuf(0x58C, 0x00, 0x08, txBuf);
   }
 }
 
@@ -347,11 +357,27 @@ void HaltechCan::SendButtonInfo()
   }
 
   ButtonInfo[2] = 0;                        // byte 3 filled with 0
-  CAN0.sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D
+  sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D
 }
 
 void HaltechCan::SendKeepAlive()
 {                                          // send keep alive frame
   byte KeepAlive[1] = {5};                 // frame dat is 0x05 for byte 0
-  CAN0.sendMsgBuf(0x70C, 0, 1, KeepAlive); // send the frame at 70D
+  sendMsgBuf(0x70C, 0, 1, KeepAlive); // send the frame at 70D
+}
+
+bool HaltechCan::sendMsgBuf(long unsigned int id, unsigned char ext, unsigned char len, byte *buf)
+{
+    twai_message_t message;
+    message.identifier = id;
+    message.extd = ext ? 1 : 0;
+    message.data_length_code = len;
+    
+    // Copy the buffer contents
+    memcpy(message.data, buf, len);
+    
+    // Send the message
+    esp_err_t result = twai_transmit(&message, pdMS_TO_TICKS(100));
+    
+    return (result == ESP_OK);
 }

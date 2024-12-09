@@ -1,5 +1,4 @@
 #include "screen.h"
-#include "main.h"
 #include "haltech_can.h"
 #include "haltech_button.h"
 
@@ -10,7 +9,41 @@ uint8_t numberIndex = 0;
 
 const uint8_t nButtons = 16;
 HaltechDisplayType_e defaultButtonLayout[nButtons] = {
-  HT_RPM, HT_MANIFOLD_PRESSURE, HT_THROTTLE_POSITION, HT_OIL_PRESSURE, HT_IGNITION_ANGLE, HT_WIDEBAND_OVERALL, HT_VEHICLE_SPEED, HT_INTAKE_CAM_ANGLE_1, HT_BATTERY_VOLTAGE, HT_COOLANT_TEMPERATURE, HT_AIR_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE, HT_OIL_TEMPERATURE};
+  HT_MANIFOLD_PRESSURE,
+  HT_RPM,
+  HT_THROTTLE_POSITION,
+  HT_COOLANT_TEMPERATURE,
+  HT_OIL_PRESSURE,
+  HT_OIL_TEMPERATURE,
+  HT_WIDEBAND_OVERALL,
+  HT_AIR_TEMPERATURE,
+  HT_BOOST_CONTROL_OUTPUT,
+  HT_TARGET_BOOST_LEVEL,
+  HT_ECU_TEMPERATURE,
+  HT_BATTERY_VOLTAGE,
+  HT_INTAKE_CAM_ANGLE_1,
+  HT_VEHICLE_SPEED,
+  HT_TOTAL_FUEL_USED,
+  HT_KNOCK_LEVEL_1,
+};
+const HaltechUnit_e defaultButtonUnits[nButtons] = {
+  UNIT_PSI,    // Manifold Pressure
+  UNIT_RPM,    // RPM
+  UNIT_PERCENT,// Throttle Position
+  UNIT_FAHRENHEIT,// Coolant Temperature
+  UNIT_PSI,    // Oil Pressure
+  UNIT_FAHRENHEIT,// Oil Temperature
+  UNIT_LAMBDA,    // Wideband Overall
+  UNIT_FAHRENHEIT,// Air Temperature
+  UNIT_PERCENT,// Boost Control Output
+  UNIT_PSI,    // Target Boost Level
+  UNIT_CELSIUS,// ECU Temperature
+  UNIT_VOLTS,   // Battery Voltage
+  UNIT_DEGREES, // Intake Cam Angle 1
+  UNIT_MPH,    // Vehicle Speed
+  UNIT_GALLONS,  // Total Fuel Used
+  UNIT_DB,    // Knock Level 1
+};
 
 // Invoke the TFT_eSPI button class and create all the button objects
 HaltechButton htButtons[16];
@@ -104,36 +137,13 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
+
   uint8_t nCols = 4;
   uint8_t nRows = 4;
   uint16_t buttonWidth = TFT_HEIGHT / nCols;
   uint16_t buttonHeight = TFT_WIDTH / nRows;
 
-  int i = -1;
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_MANIFOLD_PRESSURE], UNIT_PSI);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_RPM], UNIT_RPM);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_THROTTLE_POSITION], UNIT_PERCENT);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_COOLANT_TEMPERATURE], UNIT_FAHRENHEIT);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_OIL_PRESSURE], UNIT_PSI);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_OIL_TEMPERATURE], UNIT_FAHRENHEIT);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_WIDEBAND_OVERALL], UNIT_LAMBDA);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_AIR_TEMPERATURE], UNIT_FAHRENHEIT);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_BOOST_CONTROL_OUTPUT], UNIT_PERCENT);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_TARGET_BOOST_LEVEL], UNIT_PSI);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_ECU_TEMPERATURE], UNIT_CELSIUS);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_BATTERY_VOLTAGE], UNIT_VOLTS);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_INTAKE_CAM_ANGLE_1], UNIT_DEGREES);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_VEHICLE_SPEED], UNIT_MPH);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_TOTAL_FUEL_USED], UNIT_GALLONS);
-  htButtons[++i].initButton(&tft, i % 4 * buttonWidth, i / 4 * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[HT_KNOCK_LEVEL_1], UNIT_DB);
-
-  for (uint8_t row = 0; row < nRows; row++) {
-    for (uint8_t col = 0; col < nCols; col++) {
-      uint8_t index = col + row * nCols;
-      // htButtons[index].initButton(&tft, col * buttonWidth, row * buttonHeight, buttonWidth, buttonHeight, TFT_GREEN, TFT_BLACK, TFT_WHITE, 1, &dashValues[row*nRows+col]);
-      htButtons[index].drawButton();
-    }
-  }
+  loadLayout(tft, buttonWidth, buttonHeight);
 }
 
 void screenLoop() {
@@ -176,4 +186,98 @@ void screenLoop() {
 
   // Update last debounce time
   lastDebounceTime = currentMillis;
+}
+
+// In header file, add these global arrays
+HaltechDisplayType_e currentButtonLayout[nButtons];
+HaltechUnit_e currentButtonUnits[nButtons];
+
+bool saveLayout() {
+    // Ensure SPIFFS is mounted
+    if (!SPIFFS.begin(true)) {
+        Serial.println("SPIFFS mount failed");
+        return false;
+    }
+
+    // Open file for writing
+    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_WRITE);
+    if (!layoutFile) {
+        Serial.println("Failed to open layout file for writing");
+        return false;
+    }
+
+    // Write display types
+    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
+
+    // Write units
+    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
+
+    layoutFile.close();
+    return true;
+}
+
+bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
+    // Ensure SPIFFS is mounted
+    if (!SPIFFS.begin(true)) {
+        Serial.println("SPIFFS mount failed");
+        return false;
+    }
+
+    // Check if layout file exists
+    if (!SPIFFS.exists("/button_layout.bin")) {
+        Serial.println("No saved layout found. Using default.");
+        
+        // Copy default layout
+        memcpy(currentButtonLayout, defaultButtonLayout, sizeof(defaultButtonLayout));
+        memcpy(currentButtonUnits, defaultButtonUnits, sizeof(defaultButtonUnits));
+        
+        // Set up default layout
+        for (uint8_t i = 0; i < nButtons; i++) {
+            htButtons[i].initButton(&tft, 
+                i % 4 * buttonWidth, 
+                i / 4 * buttonHeight, 
+                buttonWidth, 
+                buttonHeight, 
+                TFT_GREEN, 
+                TFT_BLACK, 
+                TFT_WHITE, 
+                1, 
+                &dashValues[defaultButtonLayout[i]], 
+                defaultButtonUnits[i]);
+        }
+        return false;
+    }
+
+    // Open file for reading
+    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
+    if (!layoutFile) {
+        Serial.println("Failed to open layout file for reading");
+        return false;
+    }
+
+    // Read display types
+    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
+
+    // Read units
+    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
+
+    layoutFile.close();
+
+    // Set up buttons with saved configuration
+    for (uint8_t i = 0; i < nButtons; i++) {
+        htButtons[i].initButton(&tft, 
+            i % 4 * buttonWidth, 
+            i / 4 * buttonHeight, 
+            buttonWidth, 
+            buttonHeight, 
+            TFT_GREEN, 
+            TFT_BLACK, 
+            TFT_WHITE, 
+            1, 
+            &dashValues[currentButtonLayout[i]], 
+            currentButtonUnits[i]);
+      htButtons[i].drawButton();
+    }
+
+    return true;
 }
