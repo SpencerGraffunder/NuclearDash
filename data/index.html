@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NuclearDash</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f4f4f4; 
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .grid-item {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .grid-item-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .grid-item-value {
+            font-size: 2em;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        .grid-item-unit {
+            color: #666;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div id="square1" class="grid-item">
+            <div class="grid-item-name">MAP</div>
+            <div class="grid-item-value" id="value0">--</div>
+            <div class="grid-item-unit">PSI (abs)</div>
+        </div>
+        <div id="square2" class="grid-item">
+            <div class="grid-item-name">RPM</div>
+            <div class="grid-item-value" id="value1">--</div>
+            <div class="grid-item-unit">RPM</div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to update the grid dynamically using SSE
+        const eventSource = new EventSource('/events');
+
+        // Listen for 'update' events from the server
+        eventSource.addEventListener('update', (event) => {
+            const data = JSON.parse(event.data);
+            const { index, value, precision } = data;
+
+            // Update the corresponding grid value
+            const valueElement = document.getElementById(`value${index}`);
+            if (valueElement) {
+                valueElement.textContent = value.toFixed(precision); // Format with 2 decimal places
+            }
+        });
+
+        eventSource.onerror = (error) => {
+            console.error('Error with SSE:', error);
+        };
+    </script>
+</body>
+</html>

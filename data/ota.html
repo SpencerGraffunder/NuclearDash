@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 OTA Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        #status { margin: 10px 0; padding: 10px; background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h1>OTA Firmware Update</h1>
+    <form method='POST' action='/update' enctype='multipart/form-data'>
+        <input type='file' name='update' accept='.bin'>
+        <input type='submit' value='Update Firmware'>
+    </form>
+    <div id='status'></div>
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            
+            fetch('/update', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(result => {
+                document.getElementById('status').textContent = result;
+            })
+            .catch(error => {
+                document.getElementById('status').textContent = 'Update failed: ' + error;
+            });
+        });
+    </script>
+</body>
+</html>

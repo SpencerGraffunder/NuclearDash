@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>      // Hardware-specific library
 #include "screen.h"
+#include "webpage.h"
 
 HaltechCan htc;
 
@@ -22,9 +23,12 @@ void setup() {
       delay(500);
     }
   }
+
+  webpageSetup();
 }
 
 void loop(void) {
   screenLoop();
   htc.process();
+  webpageLoop();
 }

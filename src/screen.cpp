@@ -137,7 +137,6 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
-
   uint8_t nCols = 4;
   uint8_t nRows = 4;
   uint16_t buttonWidth = TFT_HEIGHT / nCols;
@@ -180,7 +179,7 @@ void screenLoop() {
     // Optional: Long press handling (you can expand this as needed)
     if (htButtons[buttonIndex].isPressed() && 
         (currentMillis - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
-      // Long press detected - add your long press handling code here
+      // Long press detected
     }
   }
 
@@ -245,23 +244,25 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
                 &dashValues[defaultButtonLayout[i]], 
                 defaultButtonUnits[i]);
         }
+
+        saveLayout();
         return false;
+    } else {
+      // Open file for reading
+      File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
+      if (!layoutFile) {
+          Serial.println("Failed to open layout file for reading");
+          return false;
+      }
+
+      // Read display types
+      layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
+
+      // Read units
+      layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
+
+      layoutFile.close();
     }
-
-    // Open file for reading
-    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
-    if (!layoutFile) {
-        Serial.println("Failed to open layout file for reading");
-        return false;
-    }
-
-    // Read display types
-    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
-
-    // Read units
-    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
-
-    layoutFile.close();
 
     // Set up buttons with saved configuration
     for (uint8_t i = 0; i < nButtons; i++) {

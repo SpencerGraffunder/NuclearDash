@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Update.h>
+#include <ArduinoOTA.h>
 
 // External variables for sensor data
 extern float temperature;
@@ -22,7 +23,7 @@ void webpageLoop();
 // Handler functions
 void handleRoot();
 void handleOTAPage();
-void handleSensorData();
 void handleUpdateUpload();
+void updateWebpageValue(int index, float value, int precision);
 
 #endif // WEBPAGE_H

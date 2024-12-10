@@ -1,8 +1,12 @@
 #include "webpage.h"
+#include <SPIFFS.h>
+#include <vector>
+
+std::vector<WiFiClient> sseClients;
 
 // WiFi Configuration
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "Little House On The Quarry";
+const char* password = "heckifiknow";
 
 // Webserver setup
 WebServer server(80);
@@ -18,89 +22,29 @@ size_t updateSize = 0;
 size_t updateWritten = 0;
 
 void handleRoot() {
-  String html = F(R"(
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ESP32 Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .data-display { background-color: #f4f4f4; padding: 10px; margin: 10px 0; }
-    </style>
-</head>
-<body>
-    <h1>ESP32 Sensor Dashboard</h1>
-    <div class="data-display">
-        <h2>Sensor Readings</h2>
-        <p>Temperature: <span id="temp">--</span>°C</p>
-        <p>Humidity: <span id="humid">--</span>%</p>
-    </div>
-    <script>
-        function updateData() {
-            fetch('/data')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('temp').textContent = data.temperature.toFixed(1);
-                    document.getElementById('humid').textContent = data.humidity.toFixed(1);
-                });
-        }
-        
-        // Update every 2 seconds
-        setInterval(updateData, 2000);
-        updateData(); // Initial fetch
-    </script>
-</body>
-</html>
-)");
-  server.send(200, "text/html", html);
+ File indexHtmlFile = SPIFFS.open("/index.html", "r");
+ if (!indexHtmlFile) {
+   server.send(500, "text/plain", "Failed to open index HTML file");
+   return;
+ }
+ 
+ String html = indexHtmlFile.readString();
+ indexHtmlFile.close();
+ 
+ server.send(200, "text/html", html);
 }
 
 void handleOTAPage() {
-  String otaHtml = F(R"(
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ESP32 OTA Update</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        #status { margin: 10px 0; padding: 10px; background-color: #f4f4f4; }
-    </style>
-</head>
-<body>
-    <h1>OTA Firmware Update</h1>
-    <form method='POST' action='/update' enctype='multipart/form-data'>
-        <input type='file' name='update' accept='.bin'>
-        <input type='submit' value='Update Firmware'>
-    </form>
-    <div id='status'></div>
-    <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData(this);
-            
-            fetch('/update', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(result => {
-                document.getElementById('status').textContent = result;
-            })
-            .catch(error => {
-                document.getElementById('status').textContent = 'Update failed: ' + error;
-            });
-        });
-    </script>
-</body>
-</html>
-)");
+  File otaHtmlFile = SPIFFS.open("/ota.html", "r");
+  if (!otaHtmlFile) {
+    server.send(500, "text/plain", "Failed to open OTA HTML file");
+    return;
+  }
+  
+  String otaHtml = otaHtmlFile.readString();
+  otaHtmlFile.close();
+  
   server.send(200, "text/html", otaHtml);
-}
-
-void handleSensorData() {
-  String jsonResponse = "{\"temperature\":" + String(temperature) 
-                      + ",\"humidity\":" + String(humidity) + "}";
-  server.send(200, "application/json", jsonResponse);
 }
 
 void handleUpdateUpload() {
@@ -138,7 +82,72 @@ void handleUpdateUpload() {
   }
 }
 
+void handleNotFound() {
+  server.send(404, "text/plain", "404: Not Found");
+}
+
+void setupOTA() {
+  ArduinoOTA.setPort(3232);  // Explicitly set OTA port
+  ArduinoOTA.setHostname("ESP32-OTA");  // Optional: give a unique name
+  
+  ArduinoOTA.onStart([]() {
+    Serial.println("OTA Update Starting");
+  });
+
+  ArduinoOTA.onEnd([]() {
+    Serial.println("OTA Update Completed");
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    switch(error) {
+      case OTA_AUTH_ERROR: Serial.println("Auth Failed"); break;
+      case OTA_BEGIN_ERROR: Serial.println("Begin Failed"); break;
+      case OTA_CONNECT_ERROR: Serial.println("Connect Failed"); break;
+      case OTA_RECEIVE_ERROR: Serial.println("Receive Failed"); break;
+      case OTA_END_ERROR: Serial.println("End Failed"); break;
+    }
+  });
+
+  ArduinoOTA.begin();
+}
+
+void handleSSE() {
+  WiFiClient client = server.client();
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/event-stream");
+  client.println("Cache-Control: no-cache");
+  client.println("Connection: keep-alive");
+  client.println();
+  client.flush();
+
+  sseClients.push_back(client);
+}
+
+void updateWebpageValue(int index, float value, int precision) {
+  String event = "event:update\n";
+  event += "data:{\"index\":" + String(index) + 
+           ",\"value\":" + String(value, precision) + 
+           ",\"precision\":" + String(precision) + "}\n\n";
+
+  for (size_t i = 0; i < sseClients.size(); ++i) {
+    if (sseClients[i].connected()) {
+      sseClients[i].print(event);
+    } else {
+      // Remove disconnected clients
+      sseClients.erase(sseClients.begin() + i);
+      --i;
+    }
+  }
+}
+
 void webpageSetup() {
+  // to load the html
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS mount failed");
+    return;
+  }
+
   // wifi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -151,15 +160,18 @@ void webpageSetup() {
   // server
   server.on("/", handleRoot);
   server.on("/ota", handleOTAPage);
-  server.on("/data", handleSensorData);
+  server.on("/events", HTTP_GET, handleSSE);
   server.on("/update", HTTP_POST, [](){
     // Dummy handler for POST request
   }, handleUpdateUpload);
+  server.onNotFound(handleNotFound);
   
   server.begin();
-  
+
+  setupOTA();
 }
 
 void webpageLoop() {
   server.handleClient();
+  ArduinoOTA.handle();
 }

@@ -3,6 +3,7 @@
 #include "driver/twai.h"
 #include "screen.h"
 #include "haltech_dash_values_init.h"
+#include "webpage.h"
 
 const char* unitDisplayStrings[] = {
     "RPM",       // UNIT_RPM
@@ -268,6 +269,7 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
         if (dashVal.type == htButtons[buttonIndex].dashValue->type)
         {
           htButtons[buttonIndex].drawValue();
+          updateWebpageValue(buttonIndex, htButtons[buttonIndex].dashValue->scaled_value, 2);
         }
       }
       // if (dashVal.type == HT_MANIFOLD_PRESSURE)
