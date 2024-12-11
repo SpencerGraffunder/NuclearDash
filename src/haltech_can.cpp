@@ -211,9 +211,9 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  const unsigned int maxProcessLoops = 100;
-  unsigned int processLoops;
-  while (processLoops < maxProcessLoops) { // escape with breaks
+  unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
+  static unsigned long lastPreemptTime = 0;
+  while (lastPreemptTime + preemptLimit > millis()) { // escape with breaks or when it's gone for too long
     twai_message_t message;
     esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(10)); // Short timeout to check for messages
     //printf("TWAI: 0x%04x\n", result);
@@ -236,6 +236,7 @@ void HaltechCan::process()
                     message.data_length_code, 
                     message.data);
   }
+  lastPreemptTime = millis();
 
   // Keep alive and button info timing remains the same
   if (millis() - KAintervalMillis >= KAinterval)

@@ -30,10 +30,4 @@ void loop(void) {
   screenLoop();
   htc.process();
   webpageLoop();
-
-  static bool buzz = true;
-  digitalWrite(17, buzz);
-  digitalWrite(4, buzz);
-  buzz = !buzz;
-  delay(1000);
 }
