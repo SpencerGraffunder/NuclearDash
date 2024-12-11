@@ -7,42 +7,31 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
-const uint8_t nButtons = 16;
-HaltechDisplayType_e defaultButtonLayout[nButtons] = {
-  HT_MANIFOLD_PRESSURE,
-  HT_RPM,
-  HT_THROTTLE_POSITION,
-  HT_COOLANT_TEMPERATURE,
-  HT_OIL_PRESSURE,
-  HT_OIL_TEMPERATURE,
-  HT_WIDEBAND_OVERALL,
-  HT_AIR_TEMPERATURE,
-  HT_BOOST_CONTROL_OUTPUT,
-  HT_TARGET_BOOST_LEVEL,
-  HT_ECU_TEMPERATURE,
-  HT_BATTERY_VOLTAGE,
-  HT_INTAKE_CAM_ANGLE_1,
-  HT_VEHICLE_SPEED,
-  HT_TOTAL_FUEL_USED,
-  HT_KNOCK_LEVEL_1,
+struct ButtonConfiguration {
+    HaltechDisplayType_e displayType;
+    HaltechUnit_e unit;
+    uint8_t decimalPlaces;
 };
-const HaltechUnit_e defaultButtonUnits[nButtons] = {
-  UNIT_PSI,    // Manifold Pressure
-  UNIT_RPM,    // RPM
-  UNIT_PERCENT,// Throttle Position
-  UNIT_FAHRENHEIT,// Coolant Temperature
-  UNIT_PSI,    // Oil Pressure
-  UNIT_FAHRENHEIT,// Oil Temperature
-  UNIT_LAMBDA,    // Wideband Overall
-  UNIT_FAHRENHEIT,// Air Temperature
-  UNIT_PERCENT,// Boost Control Output
-  UNIT_PSI,    // Target Boost Level
-  UNIT_CELSIUS,// ECU Temperature
-  UNIT_VOLTS,   // Battery Voltage
-  UNIT_DEGREES, // Intake Cam Angle 1
-  UNIT_MPH,    // Vehicle Speed
-  UNIT_GALLONS,  // Total Fuel Used
-  UNIT_DB,    // Knock Level 1
+
+constexpr uint8_t nButtons = 16;
+
+constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
+    {HT_MANIFOLD_PRESSURE,    UNIT_PSI,        2},
+    {HT_RPM,                  UNIT_RPM,        0},
+    {HT_THROTTLE_POSITION,    UNIT_PERCENT,    0},
+    {HT_COOLANT_TEMPERATURE,  UNIT_FAHRENHEIT, 1},
+    {HT_OIL_PRESSURE,         UNIT_PSI,        1},
+    {HT_OIL_TEMPERATURE,      UNIT_FAHRENHEIT, 1},
+    {HT_WIDEBAND_OVERALL,     UNIT_LAMBDA,     2},
+    {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1},
+    {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0},
+    {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1},
+    {HT_ECU_TEMPERATURE,      UNIT_CELSIUS,    1},
+    {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2},
+    {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1},
+    {HT_VEHICLE_SPEED,        UNIT_MPH,        1},
+    {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4},
+    {HT_KNOCK_LEVEL_1,        UNIT_DB,         2}
 };
 
 // Invoke the TFT_eSPI button class and create all the button objects
@@ -187,9 +176,7 @@ void screenLoop() {
   lastDebounceTime = currentMillis;
 }
 
-// In header file, add these global arrays
-HaltechDisplayType_e currentButtonLayout[nButtons];
-HaltechUnit_e currentButtonUnits[nButtons];
+ButtonConfiguration currentButtonConfigs[nButtons];
 
 bool saveLayout() {
     // Ensure SPIFFS is mounted
@@ -205,11 +192,8 @@ bool saveLayout() {
         return false;
     }
 
-    // Write display types
-    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
-
-    // Write units
-    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
+    // Write entire configuration array
+    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
 
     layoutFile.close();
     return true;
@@ -227,11 +211,14 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
         Serial.println("No saved layout found. Using default.");
         
         // Copy default layout
-        memcpy(currentButtonLayout, defaultButtonLayout, sizeof(defaultButtonLayout));
-        memcpy(currentButtonUnits, defaultButtonUnits, sizeof(defaultButtonUnits));
-        
-        // Set up default layout
         for (uint8_t i = 0; i < nButtons; i++) {
+            currentButtonConfigs[i] = {
+                defaultButtonConfigs[i].displayType,
+                defaultButtonConfigs[i].unit,
+                defaultButtonConfigs[i].decimalPlaces
+            };
+        
+            // Set up default layout
             htButtons[i].initButton(&tft, 
                 i % 4 * buttonWidth, 
                 i / 4 * buttonHeight, 
@@ -241,28 +228,26 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
                 TFT_BLACK, 
                 TFT_WHITE, 
                 1, 
-                &dashValues[defaultButtonLayout[i]], 
-                defaultButtonUnits[i]);
+                &dashValues[defaultButtonConfigs[i].displayType], 
+                defaultButtonConfigs[i].unit,
+                defaultButtonConfigs[i].decimalPlaces);
         }
 
         saveLayout();
         return false;
-    } else {
-      // Open file for reading
-      File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
-      if (!layoutFile) {
-          Serial.println("Failed to open layout file for reading");
-          return false;
-      }
+    } 
 
-      // Read display types
-      layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonLayout), sizeof(currentButtonLayout));
-
-      // Read units
-      layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonUnits), sizeof(currentButtonUnits));
-
-      layoutFile.close();
+    // Open file for reading
+    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
+    if (!layoutFile) {
+        Serial.println("Failed to open layout file for reading");
+        return false;
     }
+
+    // Read entire configuration array
+    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
+
+    layoutFile.close();
 
     // Set up buttons with saved configuration
     for (uint8_t i = 0; i < nButtons; i++) {
@@ -275,9 +260,10 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
             TFT_BLACK, 
             TFT_WHITE, 
             1, 
-            &dashValues[currentButtonLayout[i]], 
-            currentButtonUnits[i]);
-      htButtons[i].drawButton();
+            &dashValues[currentButtonConfigs[i].displayType], 
+            currentButtonConfigs[i].unit,
+            currentButtonConfigs[i].decimalPlaces);
+        htButtons[i].drawButton();
     }
 
     return true;

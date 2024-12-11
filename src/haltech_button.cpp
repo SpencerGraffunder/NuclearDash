@@ -19,7 +19,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces)
 {
   _x1             = x1;
   _y1             = y1;
@@ -32,6 +32,7 @@ void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w
   _gfx            = gfx;
   this->dashValue = dashValue;
   this->displayUnit = unit;
+  this->decimalPlaces = decimalPlaces;
 }
 
 // Adjust text datum and x, y deltas
@@ -43,15 +44,11 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 }
 
 void HaltechButton::drawValue() {
-  // // Prevent drawing too frequently
-  // if (lastDrawTime + 1000 > millis()) return;
-  // lastDrawTime = millis();
-
   char buffer[10];
 
   float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
 
-  snprintf(buffer, sizeof(buffer), "%.1f", convertedValue);
+  snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
   // Set text datum to middle center for perfect centering
   _gfx->setTextDatum(MC_DATUM);
