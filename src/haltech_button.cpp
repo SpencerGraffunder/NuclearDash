@@ -46,6 +46,17 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 void HaltechButton::drawValue() {
   char buffer[10];
 
+  uint16_t fill, text;
+  if(!isPressed()) {
+    fill    = _fillcolor;
+    text    = _textcolor;
+  } else {
+    fill    = TFT_GREEN;
+    text    = _fillcolor;
+  }
+  tft.setFreeFont(LABEL1_FONT);
+  _gfx->setTextColor(text, fill);
+
   float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
 
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
@@ -61,12 +72,12 @@ void HaltechButton::drawButton(bool inverted) {
 
   tft.setFreeFont(LABEL2_FONT);
 
-  if(!inverted) {
+  if(!isPressed()) {
     fill    = _fillcolor;
     outline = _outlinecolor;
     text    = _textcolor;
   } else {
-    fill    = _textcolor;
+    fill    = TFT_GREEN;
     outline = _outlinecolor;
     text    = _fillcolor;
   }
@@ -94,13 +105,13 @@ void HaltechButton::drawButton(bool inverted) {
     _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
     // Draw units on bottom
     _gfx->drawString(unitDisplayStrings[this->displayUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
-    // Let CAN update call drawValue for the actual value
 
     _gfx->setTextDatum(tempdatum);
     //_gfx->setTextPadding(tempPadding);
     _gfx->setTextPadding(this->_w - 2);
 
-    tft.setFreeFont(LABEL1_FONT);
+    // Draw value, even if it's 0. Needed to draw over when it's pressed or unpressed.
+    drawValue();
   }
 }
 

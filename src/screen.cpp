@@ -135,12 +135,11 @@ void screenSetup() {
 }
 
 void screenLoop() {
-  unsigned long currentMillis = millis();
   static unsigned long lastDebounceTime = 0;
-  const unsigned long debounceDelay = 50; // Adjust as needed
+  const unsigned long debounceDelay = 20; // Adjust as needed
   
   // Non-blocking debounce
-  if (currentMillis - lastDebounceTime < debounceDelay) {
+  if (millis() - lastDebounceTime < debounceDelay) {
     return; // Skip processing if not enough time has passed
   }
 
@@ -158,7 +157,7 @@ void screenLoop() {
     if (htButtons[buttonIndex].isPressed() != wasPressed) {
       // Track pressed time for potential long press functionality
       if (htButtons[buttonIndex].isPressed()) {
-        htButtons[buttonIndex].pressedTime = currentMillis;
+        htButtons[buttonIndex].pressedTime = millis();
       }
       
       // Redraw button with appropriate state
@@ -167,13 +166,13 @@ void screenLoop() {
 
     // Optional: Long press handling (you can expand this as needed)
     if (htButtons[buttonIndex].isPressed() && 
-        (currentMillis - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
+        (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
       // Long press detected
     }
   }
 
   // Update last debounce time
-  lastDebounceTime = currentMillis;
+  lastDebounceTime = millis();
 }
 
 ButtonConfiguration currentButtonConfigs[nButtons];

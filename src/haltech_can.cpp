@@ -351,13 +351,8 @@ void HaltechCan::SendButtonInfo()
     {
       bitWrite(ButtonInfo[j], i, htButtons[i + j * 8].isPressed());
     }
-    // Only print if the value has changed
-    if (ButtonInfo[j] != prevButtonInfo[j])
-    {
-      Serial.printf("0x%02x\n", ButtonInfo[j]);
-      prevButtonInfo[j] = ButtonInfo[j]; // Update the stored value
-    }
   }
+  // Serial.printf("0x%04x\n", ButtonInfo[0] << 8 | ButtonInfo[1]);
 
   ButtonInfo[2] = 0;                        // byte 3 filled with 0
   sendMsgBuf(0x18C, 0, 3, ButtonInfo); // send the 3 byte data buffer at address 18D
