@@ -28,8 +28,8 @@ public:
   bool justReleased();
   void drawValue();
   long pressedTime;
-  bool isPressable = true;
-  bool isToggleable = false;
+  bool isToggleable = true;
+  bool toggledState = false;
   bool pressedState = false;
   HaltechDashValue* dashValue = nullptr;
   HaltechUnit_e displayUnit;

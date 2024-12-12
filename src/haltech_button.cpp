@@ -47,13 +47,22 @@ void HaltechButton::drawValue() {
   char buffer[10];
 
   uint16_t fill, text;
-  if(!isPressed()) {
-    fill    = _fillcolor;
-    text    = _textcolor;
-  } else {
+
+  bool drawInverted = false;
+  if (isToggleable && toggledState) {
+    drawInverted = true;
+  }
+  if (!isToggleable && pressedState) {
+    drawInverted = true;
+  }
+  if(drawInverted) {
     fill    = TFT_GREEN;
     text    = _fillcolor;
+  } else {
+    fill    = _fillcolor;
+    text    = _textcolor;
   }
+
   tft.setFreeFont(LABEL1_FONT);
   _gfx->setTextColor(text, fill);
 
@@ -72,14 +81,21 @@ void HaltechButton::drawButton(bool inverted) {
 
   tft.setFreeFont(LABEL2_FONT);
 
-  if(!isPressed()) {
-    fill    = _fillcolor;
-    outline = _outlinecolor;
-    text    = _textcolor;
-  } else {
+  bool drawInverted = false;
+  if (isToggleable && toggledState) {
+    drawInverted = true;
+  }
+  if (!isToggleable && pressedState) {
+    drawInverted = true;
+  }
+  if(drawInverted) {
     fill    = TFT_GREEN;
     outline = _outlinecolor;
     text    = _fillcolor;
+  } else {
+    fill    = _fillcolor;
+    outline = _outlinecolor;
+    text    = _textcolor;
   }
 
   uint8_t r = min(_w, _h) / 16; // Corner radius
@@ -121,6 +137,10 @@ bool HaltechButton::contains(int16_t x, int16_t y) {
 }
 
 void HaltechButton::press(bool p) {
+  if (isToggleable && pressedState && previousPressedState == false) {
+    toggledState = !toggledState;
+    // Serial.printf("ts=%u\n", toggledState);
+  }
   previousPressedState = pressedState;
   pressedState = p;
 }

@@ -349,7 +349,13 @@ void HaltechCan::SendButtonInfo()
     static uint8_t prevButtonInfo[2] = {0}; // Local static array to store previous values
     for (int i = 0; i < nButtons / 2; i++)
     {
-      bitWrite(ButtonInfo[j], i, htButtons[i + j * 8].isPressed());
+      bool buttonStatus = false;
+      if (htButtons[i + j * 8].isToggleable) {
+        buttonStatus = htButtons[i + j * 8].toggledState;
+      } else {
+        buttonStatus = htButtons[i + j * 8].isPressed();
+      }
+      bitWrite(ButtonInfo[j], i, buttonStatus);
     }
   }
   // Serial.printf("0x%04x\n", ButtonInfo[0] << 8 | ButtonInfo[1]);
