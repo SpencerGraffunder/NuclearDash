@@ -256,7 +256,6 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
 {
   // CAN Input from Haltech canbus
   byte txBuf[8] = {0};
-  static unsigned long lastTime = 0;
 
   for (int i = 0; i < HT_NONE; i++) // loop through the enum till the last one, none
   {
@@ -271,13 +270,12 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
         {
           htButtons[buttonIndex].drawValue();
           updateWebpageValue(buttonIndex, htButtons[buttonIndex].dashValue->scaled_value, 2);
+          if (htButtons[buttonIndex].dashValue->last_update_time + htButtons[buttonIndex].dashValue->update_period * 2 < millis()) {
+            printf("Late update: %s over: %lu\n", htButtons[buttonIndex].dashValue->short_name, millis() - htButtons[buttonIndex].dashValue->last_update_time + htButtons[buttonIndex].dashValue->update_period);
+          }
+          htButtons[buttonIndex].dashValue->last_update_time = millis();
         }
       }
-      // if (dashVal.type == HT_MANIFOLD_PRESSURE)
-      // {
-      //   Serial.printf("%lu\n", millis() - lastTime);
-      //   lastTime = millis();
-      // }
     }
   }
 
