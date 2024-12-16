@@ -214,14 +214,13 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long preemptLimit = 500; // break out of loop if this long has passed since we exited last
+  unsigned long preemptLimit = 100; // break out of loop if this long has passed since we exited last
   static unsigned long lastPreemptTime = 0;
   while (true) { // escape with breaks or when it's gone for too long
-    // Serial.println("before receive");
     twai_message_t message;
     esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
     // Serial.printf("TWAI: 0x%04x\n", result);
-    if (lastPreemptTime + preemptLimit > millis()) {
+    if (millis() - lastPreemptTime > preemptLimit) {
       Serial.println("preempting");
       lastPreemptTime = millis();
       break;
@@ -247,7 +246,6 @@ void HaltechCan::process()
                     message.data);
   }
 
-  // Keep alive and button info timing remains the same
   if (millis() - KAintervalMillis >= KAinterval)
   {
     KAintervalMillis = millis();
@@ -269,29 +267,17 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
     HaltechButton* button = &htButtons[buttonIndex];
     HaltechDashValue* dashValue = button->dashValue;
     if (dashValue->can_id == rxId) {
-      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte);
+      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte); // change extractValue to only take rxBuf and dashValue
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();
     }
   }
 
-  // auto it = canIdToDashValueIndex.find(rxId);
-  // if (it == canIdToDashValueIndex.end()) {
-  //   Serial.printf("Unrecognized ID: 0x%04x\n", rxId);
-  // } else {
-  //   HaltechDashValue* dashValue = it->second;
-  //   auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte);
-  //   dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
-  //   for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
-  //   {
-  //     if (dashValue->type == htButtons[buttonIndex].dashValue->type)
-  //     {
-  //       htButtons[buttonIndex].drawValue();
-  //       htButtons[buttonIndex].dashValue->last_update_time = millis();
-  //     }
-  //   }
-  // }
+  // todo loop through possible rxids and see if one comes in that we don't have a value for, for debugging
+  // Serial.printf("Unrecognized ID: 0x%04x\n", rxId);
+
+  // todo process keypad light updates???
 
   // Keypad
   byte txBuf[8] = {0};
