@@ -4,6 +4,7 @@
 #include "screen.h"
 #include "haltech_dash_values_init.h"
 #include "webpage.h"
+#include <unordered_map>
 
 const char* unitDisplayStrings[] = {
     "RPM",       // UNIT_RPM
@@ -168,7 +169,7 @@ float HaltechDashValue::convertToUnit(HaltechUnit_e toUnit)
   return this->scaled_value;
 }
 
-HaltechCan::HaltechCan() : lastProcessTime(0)
+HaltechCan::HaltechCan()
 {
 }
 
@@ -182,19 +183,21 @@ bool HaltechCan::begin(long baudRate)
 
   // Install TWAI driver
   if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-      printf("Driver installed\n");
+      Serial.printf("Driver installed\n");
   } else {
-      printf("Failed to install driver\n");
+      Serial.printf("Failed to install driver\n");
       return false;
   }
 
   // Start TWAI driver
   if (twai_start() == ESP_OK) {
-      printf("Driver started\n");
+      Serial.printf("Driver started\n");
   } else {
-      printf("Failed to start driver\n");
+      Serial.printf("Failed to start driver\n");
       return false;
   }
+
+  // updateHashList();
 
   return true;
 }
@@ -211,32 +214,38 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
+  unsigned long preemptLimit = 500; // break out of loop if this long has passed since we exited last
   static unsigned long lastPreemptTime = 0;
-  while (lastPreemptTime + preemptLimit > millis()) { // escape with breaks or when it's gone for too long
+  while (true) { // escape with breaks or when it's gone for too long
+    // Serial.println("before receive");
     twai_message_t message;
-    esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(10)); // Short timeout to check for messages
-    //printf("TWAI: 0x%04x\n", result);
+    esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
+    // Serial.printf("TWAI: 0x%04x\n", result);
+    if (lastPreemptTime + preemptLimit > millis()) {
+      Serial.println("preempting");
+      lastPreemptTime = millis();
+      break;
+    }
 
     // Break the loop if no message is available
     if (result != ESP_OK) {
-        if (result == ESP_ERR_TIMEOUT) {
-            break; // No more messages
-        }
-        // More detailed error handling if needed
-        if (result == ESP_ERR_INVALID_STATE) {
-            // Handle driver not started or other state issues
-            printf("TWAI driver in invalid state\n");
-        } else {
-            printf("Error receiving message: %s\n", esp_err_to_name(result));
-        }
-        break;
+      if (result == ESP_ERR_TIMEOUT) {
+        Serial.println("no more messages");
+        break; // No more messages
+      }
+      // More detailed error handling if needed
+      if (result == ESP_ERR_INVALID_STATE) {
+        // Handle driver not started or other state issues
+        Serial.printf("TWAI driver in invalid state\n");
+      } else {
+        Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
+      }
+      break;
     }
     processCANData(message.identifier, 
                     message.data_length_code, 
                     message.data);
   }
-  lastPreemptTime = millis();
 
   // Keep alive and button info timing remains the same
   if (millis() - KAintervalMillis >= KAinterval)
@@ -254,32 +263,38 @@ void HaltechCan::process()
 
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
-  // CAN Input from Haltech canbus
-  byte txBuf[8] = {0};
-
-  for (int i = 0; i < HT_NONE; i++) // loop through the enum till the last one, none
+  // Serial.printf("Processing ID: %lu\n", rxId);
+  for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
   {
-    auto &dashVal = dashValues[(HaltechDisplayType_e)i];
-    if (dashVal.can_id == rxId) // if the incoming value belongs to this dash value
-    {
-      uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
-      dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
-      for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
-      {
-        if (dashVal.type == htButtons[buttonIndex].dashValue->type)
-        {
-          htButtons[buttonIndex].drawValue();
-          updateWebpageValue(buttonIndex, htButtons[buttonIndex].dashValue->scaled_value, 2);
-          if (htButtons[buttonIndex].dashValue->last_update_time + htButtons[buttonIndex].dashValue->update_period * 2 < millis()) {
-            printf("Late update: %s over: %lu\n", htButtons[buttonIndex].dashValue->short_name, millis() - htButtons[buttonIndex].dashValue->last_update_time + htButtons[buttonIndex].dashValue->update_period);
-          }
-          htButtons[buttonIndex].dashValue->last_update_time = millis();
-        }
-      }
+    HaltechButton* button = &htButtons[buttonIndex];
+    HaltechDashValue* dashValue = button->dashValue;
+    if (dashValue->can_id == rxId) {
+      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte);
+      dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
+      button->drawValue();
+      dashValue->last_update_time = millis();
     }
   }
 
+  // auto it = canIdToDashValueIndex.find(rxId);
+  // if (it == canIdToDashValueIndex.end()) {
+  //   Serial.printf("Unrecognized ID: 0x%04x\n", rxId);
+  // } else {
+  //   HaltechDashValue* dashValue = it->second;
+  //   auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte);
+  //   dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
+  //   for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
+  //   {
+  //     if (dashValue->type == htButtons[buttonIndex].dashValue->type)
+  //     {
+  //       htButtons[buttonIndex].drawValue();
+  //       htButtons[buttonIndex].dashValue->last_update_time = millis();
+  //     }
+  //   }
+  // }
+
   // Keypad
+  byte txBuf[8] = {0};
   if (rxId == 0x60C)
   {
     if ((rxBuf[0]) == 0x22)

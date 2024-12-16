@@ -7,6 +7,7 @@ std::vector<WiFiClient> sseClients;
 // WiFi Configuration
 const char* ssid = "Little House On The Quarry";
 const char* password = "heckifiknow";
+const char* hostname = "NuclearDash";
 
 // Webserver setup
 WebServer server(80);
@@ -22,16 +23,17 @@ size_t updateSize = 0;
 size_t updateWritten = 0;
 
 void handleRoot() {
- File indexHtmlFile = SPIFFS.open("/index.html", "r");
- if (!indexHtmlFile) {
-   server.send(500, "text/plain", "Failed to open index HTML file");
-   return;
- }
- 
- String html = indexHtmlFile.readString();
- indexHtmlFile.close();
- 
- server.send(200, "text/html", html);
+  Serial.println("handling root");
+  File indexHtmlFile = SPIFFS.open("/index.html", "r");
+  if (!indexHtmlFile) {
+    server.send(500, "text/plain", "Failed to open index HTML file");
+    return;
+  }
+
+  String html = indexHtmlFile.readString();
+  indexHtmlFile.close();
+
+  server.send(200, "text/html", html);
 }
 
 void handleOTAPage() {
@@ -149,6 +151,8 @@ void webpageSetup() {
   }
 
   // wifi
+  WiFi.setHostname(hostname);
+  WiFi.setSleep(false);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

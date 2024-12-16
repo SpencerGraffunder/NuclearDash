@@ -74,6 +74,67 @@ typedef enum
     HT_FUEL_TRIM_SHORT_TERM_2,
     HT_FUEL_TRIM_LONG_TERM_1,
     HT_FUEL_TRIM_LONG_TERM_2,
+    HT_NEUTRAL_SWITCH,
+    HT_REVERSE_SWITCH,
+    HT_GEAR_SWITCH,
+    HT_DECEL_CUT_ACTIVE,
+    HT_TRANS_THROTTLE_ACTIVE,
+    HT_BRAKE_PEDAL_SWITCH,
+    HT_CLUTCH_SWITCH,
+    HT_OIL_PRESSURE_LIGHT,
+    HT_LAUNCH_CONTROL_ACTIVE,
+    HT_LAUNCH_CONTROL_SWITCH,
+    HT_AUX_RPM_LIMITER_ACTIVE,
+    HT_FLAT_SHIFT_SWITCH,
+    HT_TORQUE_REDUCT_ACTIVE,
+    HT_TC_ENABLED,
+    HT_TC_ACTIVE,
+    HT_AIR_CON_REQUEST,
+    HT_AIR_CON_OUTPUT,
+    HT_THERMO_FAN_4_ON,
+    HT_THERMO_FAN_3_ON,
+    HT_THERMO_FAN_2_ON,
+    HT_THERMO_FAN_1_ON,
+    HT_ROTARY_TRIM_POT_1,
+    HT_ROTARY_TRIM_POT_2,
+    HT_ROTARY_TRIM_POT_3,
+    HT_CHECK_ENGINE_LIGHT,
+    HT_BATTERY_LIGHT_ACTIVE,
+    HT_HAND_BRAKE_STATE,
+    HT_TRACTION_CONTROL_LIGHT,
+    HT_IGNITION_SWITCH,
+    HT_TURBO_TIMER_TIME_REM,
+    HT_TURB_TIMER_ENG_TIM_REM,
+    HT_PIT_SPEED_LIM_ERROR,
+    HT_PIT_SPEED_LIM_ACTIVE,
+    HT_PIT_SPEED_LIM_SW_STATE,
+    HT_ABS_ERROR,
+    HT_ABS_ACTIVE,
+    HT_ABS_ARMED,
+    HT_STEERING_WHEEL_ANGLE,
+    HT_DRIVESHAFT_RPM,
+    HT_NOS_PRESSURE_SENSOR_2,
+    HT_NOS_PRESSURE_SENSOR_3,
+    HT_NOS_PRESSURE_SENSOR_4,
+    HT_TURBO_SPEED_SENSOR_2,
+    HT_GENERIC_SENSOR_1,
+    HT_GENERIC_SENSOR_2,
+    HT_GENERIC_SENSOR_3,
+    HT_GENERIC_SENSOR_4,
+    HT_GENERIC_SENSOR_5,
+    HT_GENERIC_SENSOR_6,
+    HT_GENERIC_SENSOR_7,
+    HT_GENERIC_SENSOR_8,
+    HT_GENERIC_SENSOR_9,
+    HT_GENERIC_SENSOR_10,
+    HT_TARGET_LAMBDA,
+    HT_NITROUS_ST_1_OUT_STATE,
+    HT_NITROUS_ST_2_OUT_STATE,
+    HT_NITROUS_ST_3_OUT_STATE,
+    HT_NITROUS_ST_4_OUT_STATE,
+    HT_NITROUS_ST_5_OUT_STATE,
+    HT_NITROUS_ST_6_OUT_STATE,
+    HT_WATER_INJ_AD_OUT_STATE,
     HT_TORQUE_MGMT_KNOB,
     HT_GEARBOX_LINE_PRESSURE,
     HT_INJ_STAGE_3_DUTY,
@@ -186,7 +247,11 @@ typedef enum
     HT_TIRE_LEAK_FL,           
     HT_ENGINE_PROTECTION_SEV,  
     HT_ENGINE_PROTECTION_REA,  
-    HT_LIGHT_STATE,            
+    HT_LIGHT_STATE_PARK,
+    HT_LIGHT_STATE_HEAD,
+    HT_LIGHT_STATE_HIGH,
+    HT_LIGHT_STATE_LEFT,
+    HT_LIGHT_STATE_RIGHT,
     HT_TOTAL_FUEL_USED_T1,     
     HT_TRIP_METER_1,           
     HT_GEN_OUT_STATES,
@@ -194,6 +259,10 @@ typedef enum
     HT_WATER_INJ_ADV_DUTY,
     HT_EXHAUST_CUTOUT_STATE,
     HT_N2O_BOTTLE_OPEN_STATE,
+    HT_GEN_OL_MOTOR_CONT_1_ST,
+    HT_GEN_OL_MOTOR_CONT_2_ST,
+    HT_GEN_OL_MOTOR_CONT_3_ST,
+    HT_RESERVED,
     HT_NONE
 } HaltechDisplayType_e;
 
@@ -256,6 +325,7 @@ struct HaltechDashValue
     bool isSigned;
     unsigned long last_update_time; // Millis when last updated
     float scaled_value;             // Value after scaling has been applied
+    uint8_t bitfieldPos;
 
     float convertToUnit(HaltechUnit_e toUnit);
 };
@@ -270,7 +340,6 @@ public:
     void process();
 
 private:
-    unsigned long lastProcessTime;
     uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte);
     void processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
     void SendButtonInfo();

@@ -155,6 +155,8 @@ void screenLoop() {
 
     // Only redraw if button state has changed
     if (htButtons[buttonIndex].isPressed() != wasPressed) {
+      Serial.printf("%s pressed\n", htButtons[buttonIndex].dashValue->name);
+
       // Track pressed time for potential long press functionality
       if (htButtons[buttonIndex].isPressed()) {
         htButtons[buttonIndex].pressedTime = millis();
