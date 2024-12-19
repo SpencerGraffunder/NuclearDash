@@ -340,7 +340,8 @@ public:
     void process();
 
 private:
-    uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool isSigned);
+    unsigned long lastProcessTime;
+    uint32_t extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool is_signed);
     void processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf);
     void SendButtonInfo();
     void SendKeepAlive();

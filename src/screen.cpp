@@ -28,7 +28,7 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
     {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1, false},
     {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0, true},
     {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1, false},
-    {HT_ECU_TEMPERATURE,      UNIT_CELSIUS,    1, false},
+    {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1, false},
     {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2, false},
     {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1, false},
     {HT_VEHICLE_SPEED,        UNIT_MPH,        1, false},

@@ -27,6 +27,8 @@ public:
   bool justPressed();
   bool justReleased();
   void drawValue();
+  void drawGraph();
+  void drawBar();
   long pressedTime;
   bool isToggleable = true;
   bool toggledState = false;

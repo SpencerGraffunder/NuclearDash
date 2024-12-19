@@ -77,6 +77,14 @@ void HaltechButton::drawValue() {
   _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
 }
 
+void HaltechButton::drawGraph() {
+
+}
+
+void HaltechButton::drawBar() {
+  
+}
+
 void HaltechButton::drawButton(bool inverted) {
   uint16_t fill, outline, text;
 

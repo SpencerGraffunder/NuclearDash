@@ -202,31 +202,35 @@ bool HaltechCan::begin(long baudRate)
   return true;
 }
 
-uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool isSigned)
+uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool is_signed)
 {
-  uint32_t result = 0;
-  uint8_t num_bytes = end_byte - start_byte + 1;
-  
-  // Build up the raw value
-  for (int i = start_byte; i <= end_byte; i++)
-  {
-    result = (result << 8) | buffer[i];
-  }
-
-  // Handle signed values
-  if (isSigned)
-  {
-    // Check if the highest bit is set (negative number)
-    uint32_t signBitMask = 1UL << ((num_bytes * 8) - 1);
-    if (result & signBitMask)
+    uint32_t result = 0;
+    uint8_t num_bytes = end_byte - start_byte + 1;
+    
+    // Extract the value
+    for (int i = start_byte; i <= end_byte; i++)
     {
-      // Create a mask for the unused bits that need to be set to 1
-      uint32_t extensionMask = ~((1UL << (num_bytes * 8)) - 1);
-      result |= extensionMask;
+        result = (result << 8) | buffer[i];
     }
-  }
-  
-  return result;
+    
+    // Handle sign extension if needed
+    if (is_signed)
+    {
+        // Calculate number of bits in the value
+        uint8_t num_bits = num_bytes * 8;
+        
+        // Check if the highest bit is set (negative number)
+        if (result & (1UL << (num_bits - 1)))
+        {
+            // Create a mask for sign extension
+            uint32_t mask = 0xFFFFFFFF << num_bits;
+            
+            // Apply sign extension
+            result |= mask;
+        }
+    }
+    
+    return result;
 }
 
 void HaltechCan::process()
@@ -278,7 +282,7 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
     HaltechButton* button = &htButtons[buttonIndex];
     HaltechDashValue* dashValue = button->dashValue;
     if (dashValue->can_id == rxId) {
-      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte, dashValue->isSigned);
+      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte, dashValue->is_signed);
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();
