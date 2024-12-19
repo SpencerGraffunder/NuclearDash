@@ -199,14 +199,35 @@ bool HaltechCan::begin(long baudRate)
   return true;
 }
 
-uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte)
+uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool is_signed)
 {
-  uint32_t result = 0;
-  for (int i = start_byte; i <= end_byte; i++)
-  {
-    result = (result << 8) | buffer[i];
-  }
-  return result;
+    uint32_t result = 0;
+    uint8_t num_bytes = end_byte - start_byte + 1;
+    
+    // Extract the value
+    for (int i = start_byte; i <= end_byte; i++)
+    {
+        result = (result << 8) | buffer[i];
+    }
+    
+    // Handle sign extension if needed
+    if (is_signed)
+    {
+        // Calculate number of bits in the value
+        uint8_t num_bits = num_bytes * 8;
+        
+        // Check if the highest bit is set (negative number)
+        if (result & (1UL << (num_bits - 1)))
+        {
+            // Create a mask for sign extension
+            uint32_t mask = 0xFFFFFFFF << num_bits;
+            
+            // Apply sign extension
+            result |= mask;
+        }
+    }
+    
+    return result;
 }
 
 void HaltechCan::process()
@@ -263,7 +284,7 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
     auto &dashVal = dashValues[(HaltechDisplayType_e)i];
     if (dashVal.can_id == rxId) // if the incoming value belongs to this dash value
     {
-      uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte);
+      uint32_t rawVal = extractValue(rxBuf, dashVal.start_byte, dashVal.end_byte, dashVal.isSigned);
       dashVal.scaled_value = (float)rawVal * dashVal.scale_factor + dashVal.offset;
       for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
       {

@@ -26,7 +26,7 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
     {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1},
     {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0},
     {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1},
-    {HT_ECU_TEMPERATURE,      UNIT_CELSIUS,    1},
+    {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1},
     {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2},
     {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1},
     {HT_VEHICLE_SPEED,        UNIT_MPH,        1},
@@ -169,13 +169,14 @@ void screenLoop() {
         if (htButtons[buttonIndex].isPressed() && 
             (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
           // Long press detected
+          Serial.println("going to menu");
           currScreenState = STATE_MENU;
           menuButtonIndex = buttonIndex;
         }
       }
       break;
     case STATE_MENU:
-
+      Serial.println("leaving menu");
       currScreenState = STATE_NORMAL;
       break;
   }
