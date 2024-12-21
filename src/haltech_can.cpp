@@ -214,7 +214,7 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long preemptLimit = 100; // break out of loop if this long has passed since we exited last
+  unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
   static unsigned long lastPreemptTime = 0;
   while (true) { // escape with breaks or when it's gone for too long
     twai_message_t message;

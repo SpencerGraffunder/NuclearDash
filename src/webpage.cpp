@@ -1,6 +1,7 @@
 #include "webpage.h"
 #include <SPIFFS.h>
 #include <vector>
+#include <ESPmDNS.h>
 
 std::vector<WiFiClient> sseClients;
 
@@ -8,6 +9,8 @@ std::vector<WiFiClient> sseClients;
 const char* ssid = "Little House On The Quarry";
 const char* password = "heckifiknow";
 const char* hostname = "NuclearDash";
+const char* selfssid = "NuclearDash";
+const char* selfpassword = "nucleard";
 
 // Webserver setup
 WebServer server(80);
@@ -143,6 +146,39 @@ void updateWebpageValue(int index, float value, int precision) {
   }
 }
 
+void createAccessPoint() {
+  Serial.println("\nFailed to connect to WiFi. Creating Access Point.");
+  
+  // Stop any previous WiFi connections
+  WiFi.disconnect(true);
+  
+  // Configure soft access point
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(selfssid, selfpassword);
+  
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+
+  // Set up mDNS for access point
+  if (!MDNS.begin(hostname)) {
+    Serial.println("Error setting up MDNS responder for AP!");
+  }
+
+  // Server routes for AP mode (these would be the same as in normal mode)
+  server.on("/", handleRoot);
+  server.on("/ota", handleOTAPage);
+  server.on("/events", HTTP_GET, handleSSE);
+  server.on("/update", HTTP_POST, [](){
+    // Dummy handler for POST request
+  }, handleUpdateUpload);
+  server.onNotFound(handleNotFound);
+  
+  server.begin();
+
+  setupOTA();
+}
+
 void webpageSetup() {
   // to load the html
   if (!SPIFFS.begin(true)) {
@@ -150,18 +186,34 @@ void webpageSetup() {
     return;
   }
 
-  // wifi
+  // WiFi connection attempt
   WiFi.setHostname(hostname);
   WiFi.setSleep(false);
   WiFi.begin(ssid, password);
+
+  // Wait for WiFi connection with timeout
+  unsigned long startAttemptTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(200);
     Serial.print(".");
+    
+    // If connection fails after 10 seconds, create access point
+    if (millis() - startAttemptTime > 3000) {
+      createAccessPoint();
+      return;
+    }
   }
+
+  // WiFi Connected Successfully
   Serial.println("\nWiFi Connected");
   Serial.println("IP Address: " + WiFi.localIP().toString());
 
-  // server
+  // Set up mDNS
+  if (!MDNS.begin(hostname)) {
+    Serial.println("Error setting up MDNS responder!");
+  }
+
+  // Server routes
   server.on("/", handleRoot);
   server.on("/ota", handleOTAPage);
   server.on("/events", HTTP_GET, handleSSE);
