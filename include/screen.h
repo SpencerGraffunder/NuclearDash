@@ -32,10 +32,10 @@ extern TFT_eSPI tft; // Invoke custom library
 // The SPIFFS file name must start with "/".
 #define CALIBRATION_FILE "/TouchCalData2"
 
-// Set REPEAT_CAL to true instead of false to run calibration
-// again, otherwise it will only be done once.
+// Increment REPEAT_CAL to calibrate once more, no need to set back to false.
 // Repeat calibration if you change the screen rotation.
-#define REPEAT_CAL false
+//#define REPEAT_CAL false
+#define REPEAT_CAL 2
 
 // Keypad start position, key sizes and spacing
 #define KEY_X 40 // Centre of key

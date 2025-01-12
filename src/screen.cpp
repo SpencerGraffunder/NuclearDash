@@ -51,23 +51,20 @@ void touch_calibrate()
 
   // check if calibration file exists and size is correct
   if (SPIFFS.exists(CALIBRATION_FILE)) {
-    if (REPEAT_CAL)
-    {
-      // Delete if we want to re-calibrate
-      SPIFFS.remove(CALIBRATION_FILE);
-    }
-    else
-    {
-      File f = SPIFFS.open(CALIBRATION_FILE, "r");
-      if (f) {
-        if (f.readBytes((char *)calData, 14) == 14)
-          calDataOK = 1;
-        f.close();
+    File f = SPIFFS.open(CALIBRATION_FILE, "r");
+    if (f) {
+      if (f.readBytes((char *)calData, 14) == 14) {
+        calDataOK = 1;
       }
+      f.close();
+      Serial.println("cal data: ");
+      for (int i = 0; i < 5; i++)
+        Serial.printf("%02x", calData[i]);
+      Serial.printf("\n");
     }
   }
 
-  if (calDataOK && !REPEAT_CAL) {
+  if (calDataOK && REPEAT_CAL <= calData[0]) {
     // calibration data valid
     tft.setTouch(calData);
   } else {
@@ -92,6 +89,8 @@ void touch_calibrate()
 
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.println("Calibration complete!");
+
+    calData[0] = REPEAT_CAL + 1;
 
     // store data
     File f = SPIFFS.open(CALIBRATION_FILE, "w");
