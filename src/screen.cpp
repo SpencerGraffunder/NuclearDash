@@ -145,32 +145,40 @@ void screenLoop() {
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
 
-  for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-    bool wasPressed = htButtons[buttonIndex].isPressed();
-    bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
-    
-    // Combine touch detection and button state update
-    htButtons[buttonIndex].press(buttonContainsTouch);
+  switch (currScreenState) {
+    case STATE_NORMAL:
+      for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+        bool wasPressed = htButtons[buttonIndex].isPressed();
+        bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
+        
+        // Combine touch detection and button state update
+        htButtons[buttonIndex].press(buttonContainsTouch);
 
-    // Only redraw if button state has changed
-    if (htButtons[buttonIndex].isPressed() != wasPressed) {
-      Serial.printf("%s pressed\n", htButtons[buttonIndex].dashValue->name);
+        // Only redraw if button state has changed
+        if (htButtons[buttonIndex].isPressed() != wasPressed) {
+          // Track pressed time for potential long press functionality
+          if (htButtons[buttonIndex].isPressed()) {
+            htButtons[buttonIndex].pressedTime = millis();
+          }
+          
+          // Redraw button with appropriate state
+          htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
+        }
 
-      // Track pressed time for potential long press functionality
-      if (htButtons[buttonIndex].isPressed()) {
-        htButtons[buttonIndex].pressedTime = millis();
+        if (htButtons[buttonIndex].isPressed() && 
+            (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
+          // Long press detected
+          currScreenState = STATE_MENU;
+          menuButtonIndex = buttonIndex;
+        }
       }
-      
-      // Redraw button with appropriate state
-      htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
-    }
+      break;
+    case STATE_MENU:
 
-    // Optional: Long press handling (you can expand this as needed)
-    if (htButtons[buttonIndex].isPressed() && 
-        (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
-      // Long press detected
-    }
+      currScreenState = STATE_NORMAL;
+      break;
   }
+  
 
   // Update last debounce time
   lastDebounceTime = millis();
