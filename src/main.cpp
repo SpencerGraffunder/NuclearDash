@@ -21,7 +21,7 @@ void setup() {
     }
   }
 
-  webpageSetup();
+  //webpageSetup();
 
   Serial.println("setup");
 }

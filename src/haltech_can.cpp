@@ -31,9 +31,9 @@ const char* unitDisplayStrings[] = {
     "Bit Field", // UNIT_BIT_FIELD
     "cc",        // UNIT_CC
     "m",         // UNIT_METERS
+    "Deg/s",     // UNIT_DEG_S
     "PSI",       // UNIT_PSI
     "PSI (abs)", // UNIT_PSI_ABS
-    "Deg/s",     // UNIT_DEG_S
     "AFR",       // UNIT_AFR
     "C",         // UNIT_CELSIUS
     "F",         // UNIT_FAHRENHEIT
@@ -202,13 +202,30 @@ bool HaltechCan::begin(long baudRate)
   return true;
 }
 
-uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte)
+uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool isSigned)
 {
   uint32_t result = 0;
+  uint8_t num_bytes = end_byte - start_byte + 1;
+  
+  // Build up the raw value
   for (int i = start_byte; i <= end_byte; i++)
   {
     result = (result << 8) | buffer[i];
   }
+
+  // Handle signed values
+  if (isSigned)
+  {
+    // Check if the highest bit is set (negative number)
+    uint32_t signBitMask = 1UL << ((num_bytes * 8) - 1);
+    if (result & signBitMask)
+    {
+      // Create a mask for the unused bits that need to be set to 1
+      uint32_t extensionMask = ~((1UL << (num_bytes * 8)) - 1);
+      result |= extensionMask;
+    }
+  }
+  
   return result;
 }
 
@@ -219,23 +236,17 @@ void HaltechCan::process()
   while (true) { // escape with breaks or when it's gone for too long
     twai_message_t message;
     esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
-    // Serial.printf("TWAI: 0x%04x\n", result);
-    if (millis() - lastPreemptTime > preemptLimit) {
-      Serial.println("preempting");
-      lastPreemptTime = millis();
-      break;
-    }
+    Serial.printf("TWAI: 0x%04x\n", result);
+    // if (millis() - lastPreemptTime > preemptLimit) {
+    //   Serial.println("preempting");
+    //   lastPreemptTime = millis();
+    //   break;
+    // }
 
     // Break the loop if no message is available
     if (result != ESP_OK) {
       if (result == ESP_ERR_TIMEOUT) {
-        Serial.println("no more messages");
-        break; // No more messages
-      }
-      // More detailed error handling if needed
-      if (result == ESP_ERR_INVALID_STATE) {
-        // Handle driver not started or other state issues
-        Serial.printf("TWAI driver in invalid state\n");
+        Serial.println("No more messages");
       } else {
         Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
       }
@@ -267,7 +278,7 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
     HaltechButton* button = &htButtons[buttonIndex];
     HaltechDashValue* dashValue = button->dashValue;
     if (dashValue->can_id == rxId) {
-      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte); // change extractValue to only take rxBuf and dashValue
+      auto rawVal = extractValue(rxBuf, dashValue->start_byte, dashValue->end_byte, dashValue->isSigned);
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();

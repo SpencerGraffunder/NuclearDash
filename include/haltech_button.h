@@ -12,13 +12,13 @@ typedef enum
   BUTTON_STATUS_COLOR_RED,
 } buttonStatusColor_e;
 
-const unsigned long longPressThresholdTime = 1000;
+const unsigned long longPressThresholdTime = 500;
 
 class HaltechButton
 {
 public:
   HaltechButton(void);
-  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces);
+  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, bool isToggleable);
   void setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
   void drawButton(bool inverted = false);
   bool contains(int16_t x, int16_t y);
@@ -34,6 +34,11 @@ public:
   HaltechDashValue* dashValue = nullptr;
   HaltechUnit_e displayUnit;
   uint8_t decimalPlaces = 1;
+  float alertMin = -1;
+  float alertMax = 1;
+  bool alertBeep = false;
+  bool alertFlash = false;
+
 
 private:
   TFT_eSPI *_gfx;
