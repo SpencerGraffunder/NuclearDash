@@ -29,5 +29,5 @@ void setup() {
 void loop(void) {
   screenLoop();
   htc.process();
-  webpageLoop();
+  //webpageLoop();
 }

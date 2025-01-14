@@ -74,9 +74,6 @@ extern uint16_t keyColor[15];
 // Invoke the TFT_eSPI button class and create all the button objects
 extern HaltechButton htButtons[16];
 
-#define N_MENU_BUTTONS 18
-extern TFT_eSPI_Button menuButtons[N_MENU_BUTTONS];
-extern TFT_eSPI_Button valSelButtons[26];
 
 extern const uint8_t nButtons;
 extern HaltechDisplayType_e buttonDisplayTypes[];
@@ -86,6 +83,31 @@ typedef enum {
   STATE_MENU,
   STATE_VAL_SEL,
 } ScreenState_e;
+
+typedef enum {
+  MENU_EXIT,
+  MENU_VAL_SEL,
+  MENU_ALERT_MIN_DOWN,
+  MENU_ALERT_MIN_UP,
+  MENU_ALERT_MAX_DOWN,
+  MENU_ALERT_MAX_UP,
+  MENU_ALERT_BEEP_OFF,
+  MENU_ALERT_BEEP_ON,
+  MENU_ALERT_FLASH_OFF,
+  MENU_ALERT_FLASH_ON,
+  MENU_PRECISION_DOWN,
+  MENU_PRECISION_UP,
+  MENU_UNITS_BACK,
+  MENU_UNITS_FORWARD,
+  MENU_BUTTON_TYPE_NONE,
+  MENU_BUTTON_TYPE_MOMENT,
+  MENU_BUTTON_TYPE_TOGGLE,
+  MENU_BUTTON_TEXT_SEL,
+  MENU_NONE,
+} menuButtonName_e;
+
+extern TFT_eSPI_Button menuButtons[MENU_NONE];
+extern TFT_eSPI_Button valSelButtons[26];
 
 extern ScreenState_e currScreenState;
 extern uint8_t buttonToModifyIndex;

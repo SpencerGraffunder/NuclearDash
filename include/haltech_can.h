@@ -322,7 +322,7 @@ struct HaltechDashValue
     float scale_factor;             // Multiply to scale the raw data
     float offset;                   // Add to raw data after scaling
     unsigned long update_period;    // Period between expected updates from the ECU
-    bool isSigned;
+    bool is_signed;
     unsigned long last_update_time; // Millis when last updated
     float scaled_value;             // Value after scaling has been applied
     uint8_t bitfieldPos;

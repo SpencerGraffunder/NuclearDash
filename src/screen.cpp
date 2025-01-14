@@ -39,7 +39,7 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
 // Invoke the TFT_eSPI button class and create all the button objects
 HaltechButton htButtons[16];
 
-TFT_eSPI_Button menuButtons[N_MENU_BUTTONS];
+TFT_eSPI_Button menuButtons[MENU_NONE];
 TFT_eSPI_Button valSelButtons[26];
 
 uint8_t buttonToModifyIndex;
@@ -131,130 +131,142 @@ void screenSetup() {
   loadLayout(tft, buttonWidth, buttonHeight);
 }
 
-typedef enum {
-  MENU_EXIT,
-  MENU_SEL_VAL,
-  MENU_ALERT_MIN_DOWN,
-  MENU_ALERT_MIN_UP,
-  MENU_ALERT_MAX_DOWN,
-  MENU_ALERT_MAX_UP,
-  MENU_ALERT_BEEP_OFF,
-  MENU_ALERT_BEEP_ON,
-  MENU_ALERT_FLASH_OFF,
-  MENU_ALERT_FLASH_ON,
-  MENU_PRECISION_DOWN,
-  MENU_PRECISION_UP,
-  MENU_UNITS_BACK,
-  MENU_UNITS_FORWARD,
-  MENU_NONE,
-} menuButtonName_e;
-
 void setupMenu() {
   tft.fillScreen(TFT_BLACK);
   
   // Common dimensions and spacing
-  const int BUTTON_HEIGHT = TFT_HEIGHT / 12;
-  const int BUTTON_WIDTH = TFT_WIDTH / 14;
-  const int SPACING = TFT_WIDTH / 5;
-  const int TEXT_HEIGHT = TFT_HEIGHT / 10;  // Height for each line
-  const int LEFT_MARGIN = TFT_WIDTH / 10;
-  const int TEXT_YOFFSET = TEXT_HEIGHT / 2;  // To center text vertically in the line
+  // TFT_HEIGHT and TFT_WIDTH are swapped from what they should be because we're in landscape
+  const int BUTTON_WIDTH = TFT_HEIGHT / 6;
+  const int SPACING = TFT_HEIGHT / 10;
+  const int LEFT_MARGIN = TFT_HEIGHT / 32;
+  const int BUTTON_HEIGHT = TFT_WIDTH / 10;
+  const int TEXT_HEIGHT = TFT_WIDTH / 10;  // Height for each line
+  const int TOP_MARGIN = LEFT_MARGIN/2;
+  const int TEXT_YOFFSET = BUTTON_HEIGHT * 9 / 32;  // To center text vertically in the line
   
-  int currentY = TEXT_YOFFSET;  // Starting Y position
+  int currentY = 0;  // Starting Y position
   HaltechButton* currentButton = &htButtons[buttonToModifyIndex];
   HaltechDashValue* dashValue = currentButton->dashValue;
 
-  menuButtons[MENU_EXIT].initButton(&tft, LEFT_MARGIN + BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_RED, TFT_WHITE,
-                                      const_cast<char*>("Exit"), 2);
+  tft.setTextDatum(TL_DATUM);
+
+  menuButtons[MENU_EXIT].initButtonUL(&tft, 0, currentY,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Exit"), 1);
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawString("Button Config", LEFT_MARGIN + BUTTON_WIDTH + SPACING, currentY + TEXT_YOFFSET, 2);
+  tft.drawString("Button Config", LEFT_MARGIN + BUTTON_WIDTH + SPACING, currentY + TOP_MARGIN);
   char valueStr[10];
   sprintf(valueStr, "%.*f", currentButton->decimalPlaces, dashValue->scaled_value);
-  tft.drawString(valueStr, TFT_WIDTH - 100, currentY + TEXT_YOFFSET, 2);
+  tft.drawString(valueStr, TFT_HEIGHT - 100, currentY + TOP_MARGIN);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Select Value", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
+  tft.drawString("Select Value", LEFT_MARGIN, currentY + TEXT_YOFFSET);
   char namecopy[30];
   strcpy(namecopy, currentButton->dashValue->name);
-  menuButtons[MENU_SEL_VAL].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*1.5, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH*2, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      namecopy, 2);
+  menuButtons[MENU_VAL_SEL].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH*3, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      namecopy, 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Alert Min:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_MIN_DOWN].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("-"), 2);
+  tft.drawString("Alert Min:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_MIN_DOWN].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("-"), 1);
   char minStr[10];
   sprintf(minStr, "%.*f", currentButton->decimalPlaces, currentButton->alertMin);
-  tft.drawString(minStr, TFT_WIDTH - BUTTON_WIDTH*1.2, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_MIN_UP].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("+"), 2);
+  tft.drawString(minStr, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_MIN_UP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("+"), 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Alert Max:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_MAX_DOWN].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("-"), 2);
+  tft.drawString("Alert Max:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_MAX_DOWN].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("-"), 1);
   char maxStr[10];
   sprintf(maxStr, "%.*f", currentButton->decimalPlaces, currentButton->alertMax);
-  tft.drawString(maxStr, TFT_WIDTH - BUTTON_WIDTH*1.2, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_MAX_UP].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("+"), 2);
+  tft.drawString(maxStr, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_MAX_UP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("+"), 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Alert Beep:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_BEEP_OFF].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
+  tft.drawString("Alert Beep:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_BEEP_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, currentButton->alertBeep ? TFT_GREEN : TFT_BLUE,
                                       currentButton->alertBeep ? TFT_GREEN : TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("OFF"), 2);
-  menuButtons[MENU_ALERT_BEEP_ON].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      const_cast<char*>("OFF"), 1);
+  menuButtons[MENU_ALERT_BEEP_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, currentButton->alertBeep ? TFT_BLUE : TFT_GREEN,
                                       currentButton->alertBeep ? TFT_BLUE : TFT_GREEN, TFT_WHITE,
-                                      const_cast<char*>("ON"), 2);
+                                      const_cast<char*>("ON"), 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Alert Flash:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_ALERT_FLASH_OFF].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
+  tft.drawString("Alert Flash:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_FLASH_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, currentButton->alertFlash ? TFT_GREEN : TFT_BLUE,
                                       currentButton->alertFlash ? TFT_GREEN : TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("OFF"), 2);
-  menuButtons[MENU_ALERT_FLASH_ON].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      const_cast<char*>("OFF"), 1);
+  menuButtons[MENU_ALERT_FLASH_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, currentButton->alertFlash ? TFT_BLUE : TFT_GREEN,
                                       currentButton->alertFlash ? TFT_BLUE : TFT_GREEN, TFT_WHITE,
-                                      const_cast<char*>("ON"), 2);
+                                      const_cast<char*>("ON"), 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Precision:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_PRECISION_DOWN].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("-"), 2);
-  tft.drawString(String(currentButton->decimalPlaces), TFT_WIDTH - BUTTON_WIDTH*1.2, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_PRECISION_UP].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("+"), 2);
+  tft.drawString("Precision:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_PRECISION_DOWN].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("-"), 1);
+  tft.drawString(String(currentButton->decimalPlaces), TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_PRECISION_UP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("+"), 1);
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Units:", LEFT_MARGIN, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_UNITS_BACK].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH*2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("-"), 2);
-  tft.drawString(dashValue->name, TFT_WIDTH - BUTTON_WIDTH*1.2, currentY + TEXT_YOFFSET, 2);
-  menuButtons[MENU_UNITS_FORWARD].initButton(&tft, TFT_WIDTH - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLUE, TFT_BLUE, TFT_WHITE,
-                                      const_cast<char*>("+"), 2);
+  tft.drawString("Units:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_UNITS_BACK].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*3, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("-"), 1);
+  tft.drawString(dashValue->name, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_UNITS_FORWARD].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("+"), 1);
+
+  currentY += TEXT_HEIGHT;
+
+  tft.drawString("Button Type:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  uint32_t buttontypebuttoncurrentx = TFT_HEIGHT / 2 + BUTTON_WIDTH / 2;
+  uint32_t buttontypebuttonwidth = TFT_HEIGHT / 6;
+  menuButtons[MENU_BUTTON_TYPE_NONE].initButton(&tft, buttontypebuttoncurrentx, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("None"), 1);
+  buttontypebuttoncurrentx += buttontypebuttonwidth;
+  menuButtons[MENU_BUTTON_TYPE_MOMENT].initButton(&tft, buttontypebuttoncurrentx, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Moment"), 1);
+  buttontypebuttoncurrentx += buttontypebuttonwidth;
+  menuButtons[MENU_BUTTON_TYPE_TOGGLE].initButton(&tft, buttontypebuttoncurrentx, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Toggle"), 1);
+
+  currentY += TEXT_HEIGHT;
+
+  tft.drawString("Button Text:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_BUTTON_TEXT_SEL].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + BUTTON_HEIGHT/2,
+                                      BUTTON_WIDTH*3, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Select"), 1);
 
   // Draw all buttons
+  tft.setFreeFont(LABEL1_FONT);
   for (int i = 0; i < MENU_NONE-1; i++) {
     menuButtons[i].drawButton();
   }
@@ -326,7 +338,7 @@ void screenLoop() {
       }
       lastScreenState = currScreenState;
 
-      for (uint8_t buttonIndex = 0; buttonIndex < N_MENU_BUTTONS; buttonIndex++) {
+      for (uint8_t buttonIndex = 0; buttonIndex < MENU_NONE; buttonIndex++) {
         bool wasPressed = menuButtons[buttonIndex].isPressed();
         bool buttonContainsTouch = isValidTouch && menuButtons[buttonIndex].contains(t_x, t_y);
         
@@ -392,24 +404,9 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
                 defaultButtonConfigs[i].decimalPlaces,
                 defaultButtonConfigs[i].isToggleable
             };
-        
-            // // Set up default layout
-            // htButtons[i].initButton(&tft, 
-            //     i % 4 * buttonWidth, 
-            //     i / 4 * buttonHeight, 
-            //     buttonWidth, 
-            //     buttonHeight, 
-            //     TFT_GREEN, 
-            //     TFT_BLACK, 
-            //     TFT_WHITE, 
-            //     1, 
-            //     &dashValues[defaultButtonConfigs[i].displayType], 
-            //     defaultButtonConfigs[i].unit,
-            //     defaultButtonConfigs[i].decimalPlaces);
         }
 
         saveLayout();
-        return false;
     }
 
     // Open file for reading
