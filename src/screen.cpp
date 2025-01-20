@@ -230,15 +230,15 @@ void setupMenu() {
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Precision:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
-  menuButtons[MENU_PRECISION_DOWN].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
+  tft.drawString("Decimal Places:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_DECIMALS_DOWN].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("-"), 1);
 
   tft.setTextDatum(TC_DATUM);
   tft.drawString(String(currentButton->decimalPlaces), TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + TEXT_YOFFSET);
 
-  menuButtons[MENU_PRECISION_UP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+  menuButtons[MENU_DECIMALS_UP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("+"), 1);
   
@@ -302,6 +302,7 @@ void screenLoop() {
   static unsigned long lastDebounceTime = 0;
   static ScreenState_e lastScreenState;
   const unsigned long debounceDelay = 20; // Adjust as needed
+  HaltechButton* currentButton;
   
   // Non-blocking debounce
   if (millis() - lastDebounceTime < debounceDelay) {
@@ -368,11 +369,102 @@ void screenLoop() {
         menuButtons[buttonIndex].press(buttonContainsTouch);
       }
 
+      currentButton = &htButtons[buttonToModifyIndex];
+
+      // exit
       if (menuButtons[MENU_EXIT].isPressed()) {
         currScreenState = STATE_NORMAL;
-        Serial.println("going to main screen");
+        //Serial.println("going to main screen");
+        break;
+      }
+
+      // select value
+      if (menuButtons[MENU_VAL_SEL].isPressed()) {
+        currScreenState = STATE_VAL_SEL;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_MIN_DOWN].isPressed()) {
+        currentButton->alertMin -= 1.0;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_MIN_UP].isPressed()) {
+        currentButton->alertMin += 1.0;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_MAX_DOWN].isPressed()) {
+        currentButton->alertMax -= 1.0;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_MAX_UP].isPressed()) {
+        currentButton->alertMax += 1.0;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_BEEP_OFF].isPressed()) {
+        currentButton->alertBeep = false;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_BEEP_ON].isPressed()) {
+        currentButton->alertBeep = true;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_FLASH_OFF].isPressed()) {
+        currentButton->alertFlash = false;
+        break;
+      }
+
+      if (menuButtons[MENU_ALERT_FLASH_ON].isPressed()) {
+        currentButton->alertFlash = true;
+        break;
       }
       
+      if (menuButtons[MENU_DECIMALS_DOWN].isPressed()) {
+        currentButton->decimalPlaces -= 1;
+        break;
+      }
+
+      if (menuButtons[MENU_DECIMALS_UP].isPressed()) {
+        currentButton->decimalPlaces += 1;
+        break;
+      }
+
+      if (menuButtons[MENU_UNITS_BACK].isPressed()) {
+        currentButton->displayUnit = currentButton->dashValue->possibleUnits[(()(currentButton->displayUnit))--];
+        break;
+      }
+
+      if (menuButtons[MENU_UNITS_FORWARD].isPressed()) {
+        currentButton->displayUnit = currentButton->dashValue->possibleUnits[(()(currentButton->displayUnit))++];
+        break;
+      }
+
+      if (menuButtons[MENU_BUTTON_TYPE_NONE].isPressed()) {
+        currentButton->isToggleable = false;
+        // not pressable
+        break;
+      }
+
+      if (menuButtons[MENU_BUTTON_TYPE_MOMENT].isPressed()) {
+        currentButton->isToggleable = false;
+        break;
+      }
+
+      if (menuButtons[MENU_BUTTON_TYPE_TOGGLE].isPressed()) {
+        currentButton->isToggleable = true;
+        break;
+      }
+
+      if (menuButtons[MENU_BUTTON_TEXT_SEL].isPressed()) {
+        
+        break;
+      }
+
       break;
 
     case STATE_VAL_SEL:
