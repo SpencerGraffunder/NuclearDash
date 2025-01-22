@@ -14,6 +14,62 @@ typedef enum
 
 const unsigned long longPressThresholdTime = 500;
 
+struct UnitOption {
+    HaltechDisplayType_e value;
+    HaltechUnit_e units[6]; // Maximum 6 units per value
+    uint8_t count;
+};
+
+static const UnitOption unitOptions[] = {
+    // Pressure measurements
+    {HT_MANIFOLD_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS}, 2},
+    {HT_COOLANT_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_FUEL_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_OIL_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_WASTEGATE_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_BRAKE_PRESSURE_FRONT, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_BRAKE_PRESSURE_REAR, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_NOS_PRESSURE_1, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_BARO_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS}, 2},
+    {HT_EXHAUST_MANIFOLD_PRESS, {UNIT_KPA, UNIT_PSI}, 2},
+    
+    // Speed measurements
+    {HT_VEHICLE_SPEED, {UNIT_KPH, UNIT_MPH}, 2},
+    {HT_CC_TARGET_SPEED, {UNIT_KPH, UNIT_MPH}, 2},
+    
+    // Temperature measurements
+    {HT_COOLANT_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_AIR_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_FUEL_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_OIL_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_GEARBOX_OIL_TEMP, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_DIFF_OIL_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_TIRE_TEMPERATURE_FL, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_TIRE_TEMPERATURE_FR, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_TIRE_TEMPERATURE_RL, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    {HT_TIRE_TEMPERATURE_RR, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
+    
+    // Distance measurements
+    {HT_SHOCK_TRAVEL_FL, {UNIT_MM, UNIT_INCHES}, 2},
+    {HT_SHOCK_TRAVEL_FR, {UNIT_MM, UNIT_INCHES}, 2},
+    {HT_SHOCK_TRAVEL_RL, {UNIT_MM, UNIT_INCHES}, 2},
+    {HT_SHOCK_TRAVEL_RR, {UNIT_MM, UNIT_INCHES}, 2},
+    
+    // Air/Fuel measurements
+    {HT_WIDEBAND_SENSOR_1, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_SENSOR_2, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_SENSOR_3, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_SENSOR_4, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_OVERALL, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_BANK_1, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    {HT_WIDEBAND_BANK_2, {UNIT_LAMBDA, UNIT_AFR}, 2},
+    
+    // Volume measurements
+    {HT_FUEL_LEVEL, {UNIT_LITERS, UNIT_GALLONS}, 2},
+    {HT_TOTAL_FUEL_USED, {UNIT_LITERS, UNIT_GALLONS}, 2},
+    {HT_TOTAL_FUEL_USED_T1, {UNIT_LITERS, UNIT_GALLONS}, 2},
+};
+
 class HaltechButton
 {
 public:
@@ -40,9 +96,11 @@ public:
   float alertMax = 1;
   bool alertBeep = false;
   bool alertFlash = false;
-
+  static const HaltechUnit_e* getValidUnits(HaltechDisplayType_e value, uint8_t& count);
+  void changeUnits(bool decrement = false);
 
 private:
+
   TFT_eSPI *_gfx;
   int16_t _x1, _y1;              // Coordinates of top-left corner of button
   int16_t _xd, _yd;              // Button text datum offsets (wrt centre of button)

@@ -159,3 +159,42 @@ bool HaltechButton::isPressed() {
 }
 bool HaltechButton::justPressed()  { return (pressedState && !previousPressedState); }
 bool HaltechButton::justReleased() { return (!pressedState && previousPressedState); }
+
+const HaltechUnit_e* HaltechButton::getValidUnits(HaltechDisplayType_e value, uint8_t& count) {
+    for (const auto& option : unitOptions) {
+        if (option.value == value) {
+            count = option.count;
+            return option.units;
+        }
+    }
+    count = 1;
+    return nullptr;
+}
+
+void HaltechButton::changeUnits(bool decrement) {
+    if (!dashValue) return;
+    
+    uint8_t unitCount;
+    const HaltechUnit_e* validUnits = getValidUnits(dashValue->type, unitCount);
+    
+    if (!validUnits) return; // No unit conversion available for this value
+    
+    // Find current unit index
+    int currentIndex = 0;
+    for (int i = 0; i < unitCount; i++) {
+        if (validUnits[i] == displayUnit) {
+            currentIndex = i;
+            break;
+        }
+    }
+    
+    // Calculate new index
+    if (decrement) {
+        currentIndex = (currentIndex - 1 + unitCount) % unitCount;
+    } else {
+        currentIndex = (currentIndex + 1) % unitCount;
+    }
+    
+    displayUnit = validUnits[currentIndex];
+    drawValue(); // Refresh display with new unit
+}

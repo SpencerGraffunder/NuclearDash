@@ -335,6 +335,7 @@ void screenLoop() {
             htButtons[buttonIndex].pressedTime = millis();
           }
           
+          
           // Redraw button with appropriate state
           htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
         }
