@@ -11,29 +11,29 @@ struct ButtonConfiguration {
     HaltechDisplayType_e displayType;
     HaltechUnit_e unit;
     uint8_t decimalPlaces;
-    bool isToggleable;
+    buttonMode_e mode;
 };
 
 constexpr uint8_t nButtons = 16;
 
 constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
-  // Value                    Unit      Decimals  Toggleable
-    {HT_MANIFOLD_PRESSURE,    UNIT_PSI,        2, false},
-    {HT_RPM,                  UNIT_RPM,        0, false},
-    {HT_THROTTLE_POSITION,    UNIT_PERCENT,    0, false},
-    {HT_COOLANT_TEMPERATURE,  UNIT_FAHRENHEIT, 1, false},
-    {HT_OIL_PRESSURE,         UNIT_PSI,        1, false},
-    {HT_OIL_TEMPERATURE,      UNIT_FAHRENHEIT, 1, false},
-    {HT_WIDEBAND_OVERALL,     UNIT_LAMBDA,     2, false},
-    {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1, false},
-    {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0, true},
-    {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1, false},
-    {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1, false},
-    {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2, false},
-    {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1, false},
-    {HT_VEHICLE_SPEED,        UNIT_MPH,        1, false},
-    {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4, false},
-    {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, false}
+  // Value                    Unit      Decimals  Mode
+    {HT_MANIFOLD_PRESSURE,    UNIT_PSI,        2, BUTTON_MODE_NONE},
+    {HT_RPM,                  UNIT_RPM,        0, BUTTON_MODE_NONE},
+    {HT_THROTTLE_POSITION,    UNIT_PERCENT,    0, BUTTON_MODE_NONE},
+    {HT_COOLANT_TEMPERATURE,  UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
+    {HT_OIL_PRESSURE,         UNIT_PSI,        1, BUTTON_MODE_NONE},
+    {HT_OIL_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
+    {HT_WIDEBAND_OVERALL,     UNIT_LAMBDA,     2, BUTTON_MODE_NONE},
+    {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
+    {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0, BUTTON_MODE_TOGGLE},
+    {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1, BUTTON_MODE_NONE},
+    {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1, BUTTON_MODE_NONE},
+    {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2, BUTTON_MODE_NONE},
+    {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1, BUTTON_MODE_NONE},
+    {HT_VEHICLE_SPEED,        UNIT_MPH,        1, BUTTON_MODE_NONE},
+    {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4, BUTTON_MODE_NONE},
+    {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, BUTTON_MODE_NONE},
 };
 
 // Invoke the TFT_eSPI button class and create all the button objects
@@ -315,6 +315,7 @@ void screenLoop() {
   switch (currScreenState) {
     case STATE_NORMAL:
       if (lastScreenState != currScreenState) {
+        tft.fillScreen(TFT_BLACK);
         for (uint8_t i = 0; i < nButtons; i++) {
           htButtons[i].drawButton();
         }
@@ -436,39 +437,41 @@ void screenLoop() {
       }
 
       if (menuButtons[MENU_UNITS_BACK].isPressed()) {
-        currentButton->displayUnit = currentButton->dashValue->possibleUnits[(()(currentButton->displayUnit))--];
+        currentButton->changeUnits(DIRECTION_PREVIOUS);
         break;
       }
 
       if (menuButtons[MENU_UNITS_FORWARD].isPressed()) {
-        currentButton->displayUnit = currentButton->dashValue->possibleUnits[(()(currentButton->displayUnit))++];
+        currentButton->changeUnits(DIRECTION_NEXT);
         break;
       }
 
       if (menuButtons[MENU_BUTTON_TYPE_NONE].isPressed()) {
-        currentButton->isToggleable = false;
-        // not pressable
+        currentButton->mode = BUTTON_MODE_NONE;
         break;
       }
 
       if (menuButtons[MENU_BUTTON_TYPE_MOMENT].isPressed()) {
-        currentButton->isToggleable = false;
+        currentButton->mode = BUTTON_MODE_MOMENTARY;
         break;
       }
 
       if (menuButtons[MENU_BUTTON_TYPE_TOGGLE].isPressed()) {
-        currentButton->isToggleable = true;
+        currentButton->mode = BUTTON_MODE_TOGGLE;
         break;
       }
 
       if (menuButtons[MENU_BUTTON_TEXT_SEL].isPressed()) {
-        
+        currScreenState = STATE_VAL_SEL;
         break;
       }
 
       break;
 
     case STATE_VAL_SEL:
+      if (lastScreenState != currScreenState) {
+        // draw val sel
+      }
       currScreenState = STATE_MENU;
       break;
   }
@@ -517,7 +520,7 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
                 defaultButtonConfigs[i].displayType,
                 defaultButtonConfigs[i].unit,
                 defaultButtonConfigs[i].decimalPlaces,
-                defaultButtonConfigs[i].isToggleable
+                defaultButtonConfigs[i].mode
             };
         }
 
@@ -550,7 +553,7 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
             &dashValues[currentButtonConfigs[i].displayType], 
             currentButtonConfigs[i].unit,
             currentButtonConfigs[i].decimalPlaces,
-            currentButtonConfigs[i].isToggleable);
+            currentButtonConfigs[i].mode);
         htButtons[i].drawButton();
     }
 

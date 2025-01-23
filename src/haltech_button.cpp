@@ -19,7 +19,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, bool isToggleable)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode)
 {
   _x1             = x1;
   _y1             = y1;
@@ -33,7 +33,7 @@ void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w
   this->dashValue = dashValue;
   this->displayUnit = unit;
   this->decimalPlaces = decimalPlaces;
-  this->isToggleable = isToggleable;
+  this->mode = mode;
 }
 
 // Adjust text datum and x, y deltas
@@ -50,10 +50,10 @@ void HaltechButton::drawValue() {
   uint16_t fill, text;
 
   bool drawInverted = false;
-  if (isToggleable && toggledState) {
+  if ((mode == BUTTON_MODE_TOGGLE) && toggledState) {
     drawInverted = true;
   }
-  if (!isToggleable && pressedState) {
+  if ((mode != BUTTON_MODE_TOGGLE) && pressedState) {
     drawInverted = true;
   }
   if(drawInverted) {
@@ -91,10 +91,10 @@ void HaltechButton::drawButton(bool inverted) {
   tft.setFreeFont(LABEL2_FONT);
 
   bool drawInverted = false;
-  if (isToggleable && toggledState) {
+  if ((mode == BUTTON_MODE_TOGGLE) && toggledState) {
     drawInverted = true;
   }
-  if (!isToggleable && pressedState) {
+  if ((mode != BUTTON_MODE_TOGGLE) && pressedState) {
     drawInverted = true;
   }
   if(drawInverted) {
@@ -146,7 +146,7 @@ bool HaltechButton::contains(int16_t x, int16_t y) {
 }
 
 void HaltechButton::press(bool p) {
-  if (isToggleable && pressedState && previousPressedState == false) {
+  if ((mode == BUTTON_MODE_TOGGLE) && pressedState && previousPressedState == false) {
     toggledState = !toggledState;
     // Serial.printf("ts=%u\n", toggledState);
   }
@@ -160,41 +160,20 @@ bool HaltechButton::isPressed() {
 bool HaltechButton::justPressed()  { return (pressedState && !previousPressedState); }
 bool HaltechButton::justReleased() { return (!pressedState && previousPressedState); }
 
-const HaltechUnit_e* HaltechButton::getValidUnits(HaltechDisplayType_e value, uint8_t& count) {
-    for (const auto& option : unitOptions) {
-        if (option.value == value) {
-            count = option.count;
-            return option.units;
+void HaltechButton::changeUnits(menuSelectionDirection_e direction) {
+  uint8_t nextUnitIndex = -1;
+  for (const UnitOption& option : unitOptions) {
+    if (option.type == this->dashValue->type) {
+      for (uint8_t i = 0; i < option.count; i++) {
+        if (option.units[i] == this->displayUnit) {
+          if (direction == DIRECTION_NEXT) {
+            nextUnitIndex = (i + 1) % option.count; // loop around
+          } else if (direction == DIRECTION_PREVIOUS) {
+            nextUnitIndex = (i - 1 + option.count) % option.count; // add option count to make sure it doesn't go negative
+          }
+          this->displayUnit = option.units[nextUnitIndex];
         }
+      }
     }
-    count = 1;
-    return nullptr;
-}
-
-void HaltechButton::changeUnits(bool decrement) {
-    if (!dashValue) return;
-    
-    uint8_t unitCount;
-    const HaltechUnit_e* validUnits = getValidUnits(dashValue->type, unitCount);
-    
-    if (!validUnits) return; // No unit conversion available for this value
-    
-    // Find current unit index
-    int currentIndex = 0;
-    for (int i = 0; i < unitCount; i++) {
-        if (validUnits[i] == displayUnit) {
-            currentIndex = i;
-            break;
-        }
-    }
-    
-    // Calculate new index
-    if (decrement) {
-        currentIndex = (currentIndex - 1 + unitCount) % unitCount;
-    } else {
-        currentIndex = (currentIndex + 1) % unitCount;
-    }
-    
-    displayUnit = validUnits[currentIndex];
-    drawValue(); // Refresh display with new unit
+  }
 }

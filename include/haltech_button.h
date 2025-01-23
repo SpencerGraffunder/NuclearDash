@@ -15,10 +15,15 @@ typedef enum
 const unsigned long longPressThresholdTime = 500;
 
 struct UnitOption {
-    HaltechDisplayType_e value;
+    HaltechDisplayType_e type;
     HaltechUnit_e units[6]; // Maximum 6 units per value
     uint8_t count;
 };
+
+typedef enum {
+  DIRECTION_NEXT,
+  DIRECTION_PREVIOUS,
+} menuSelectionDirection_e;
 
 static const UnitOption unitOptions[] = {
     // Pressure measurements
@@ -70,11 +75,17 @@ static const UnitOption unitOptions[] = {
     {HT_TOTAL_FUEL_USED_T1, {UNIT_LITERS, UNIT_GALLONS}, 2},
 };
 
+typedef enum {
+  BUTTON_MODE_NONE,
+  BUTTON_MODE_MOMENTARY,
+  BUTTON_MODE_TOGGLE,
+} buttonMode_e;
+
 class HaltechButton
 {
 public:
   HaltechButton(void);
-  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, bool isToggleable);
+  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode);
   void setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
   void drawButton(bool inverted = false);
   bool contains(int16_t x, int16_t y);
@@ -86,7 +97,7 @@ public:
   void drawGraph();
   void drawBar();
   long pressedTime;
-  bool isToggleable = true;
+  buttonMode_e mode;
   bool toggledState = false;
   bool pressedState = false;
   HaltechDashValue* dashValue = nullptr;
@@ -96,8 +107,7 @@ public:
   float alertMax = 1;
   bool alertBeep = false;
   bool alertFlash = false;
-  static const HaltechUnit_e* getValidUnits(HaltechDisplayType_e value, uint8_t& count);
-  void changeUnits(bool decrement = false);
+  void changeUnits(menuSelectionDirection_e direction);
 
 private:
 

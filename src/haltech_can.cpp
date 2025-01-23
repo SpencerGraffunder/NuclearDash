@@ -364,7 +364,7 @@ void HaltechCan::SendButtonInfo()
     for (int i = 0; i < nButtons / 2; i++)
     {
       bool buttonStatus = false;
-      if (htButtons[i + j * 8].isToggleable) {
+      if (htButtons[i + j * 8].mode == BUTTON_MODE_TOGGLE) {
         buttonStatus = htButtons[i + j * 8].toggledState;
       } else {
         buttonStatus = htButtons[i + j * 8].isPressed();
