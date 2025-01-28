@@ -307,6 +307,12 @@ typedef enum
     UNIT_NONE,
 } HaltechUnit_e;
 
+typedef enum {
+    BUTTON_TYPE_MOMENTARY,
+    BUTTON_TYPE_TOGGLE,
+    BUTTON_TYPE_NONE,
+} buttonType_e;
+
 extern const char* unitDisplayStrings[];
 
 // Each displayable field needs to have an instance of this struct
@@ -326,6 +332,7 @@ struct HaltechDashValue
     unsigned long last_update_time; // Millis when last updated
     float scaled_value;             // Value after scaling has been applied
     uint8_t bitfieldPos;
+    buttonType_e buttonType;
 
     float convertToUnit(HaltechUnit_e toUnit);
 };

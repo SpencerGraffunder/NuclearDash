@@ -24,6 +24,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>      // Hardware-specific library
 #include "haltech_button.h"
+#include "menu_button.h"
 
 extern TFT_eSPI tft; // Invoke custom library
 
@@ -82,10 +83,11 @@ typedef enum {
   STATE_NORMAL,
   STATE_MENU,
   STATE_VAL_SEL,
+  STATE_BUTTON_TEXT_SEL,
 } ScreenState_e;
 
 typedef enum {
-  MENU_EXIT,
+  MENU_BACK,
   MENU_VAL_SEL,
   MENU_ALERT_MIN_DOWN,
   MENU_ALERT_MIN_UP,
@@ -100,14 +102,14 @@ typedef enum {
   MENU_UNITS_BACK,
   MENU_UNITS_FORWARD,
   MENU_BUTTON_TYPE_NONE,
-  MENU_BUTTON_TYPE_MOMENT,
+  MENU_BUTTON_TYPE_MOMENTARY,
   MENU_BUTTON_TYPE_TOGGLE,
   MENU_BUTTON_TEXT_SEL,
   MENU_NONE,
 } menuButtonName_e;
 
-extern TFT_eSPI_Button menuButtons[MENU_NONE];
-extern TFT_eSPI_Button valSelButtons[26];
+extern MenuButton menuButtons[MENU_NONE];
+extern MenuButton valSelButtons[26];
 
 extern ScreenState_e currScreenState;
 extern uint8_t buttonToModifyIndex;

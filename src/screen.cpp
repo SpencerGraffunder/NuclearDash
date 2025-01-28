@@ -39,8 +39,8 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
 // Invoke the TFT_eSPI button class and create all the button objects
 HaltechButton htButtons[16];
 
-TFT_eSPI_Button menuButtons[MENU_NONE];
-TFT_eSPI_Button valSelButtons[26];
+MenuButton menuButtons[MENU_NONE];
+MenuButton valSelButtons[26];
 
 uint8_t buttonToModifyIndex;
 
@@ -149,9 +149,9 @@ void setupMenu() {
 
   tft.setTextDatum(TL_DATUM);
 
-  menuButtons[MENU_EXIT].initButtonUL(&tft, 0, currentY,
+  menuButtons[MENU_BACK].initButtonUL(&tft, 0, currentY,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("Exit"), 1);
+                                      const_cast<char*>("Back"), 1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   char buttonconfigstr[16];
@@ -209,11 +209,11 @@ void setupMenu() {
   tft.drawString("Alert Beep:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
   menuButtons[MENU_ALERT_BEEP_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN,
-                                      currentButton->alertBeep ? TFT_GREEN : TFT_BLACK, TFT_WHITE,
+                                      currentButton->alertBeep ? TFT_BLACK : TFT_GREEN, TFT_WHITE,
                                       const_cast<char*>("OFF"), 1);
   menuButtons[MENU_ALERT_BEEP_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN,
-                                      currentButton->alertBeep ? TFT_BLACK : TFT_GREEN, TFT_WHITE,
+                                      currentButton->alertBeep ? TFT_GREEN : TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("ON"), 1);
   
   currentY += TEXT_HEIGHT;
@@ -221,11 +221,11 @@ void setupMenu() {
   tft.drawString("Alert Flash:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
   menuButtons[MENU_ALERT_FLASH_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN,
-                                      currentButton->alertFlash ? TFT_GREEN : TFT_BLACK, TFT_WHITE,
+                                      currentButton->alertFlash ? TFT_BLACK : TFT_GREEN, TFT_WHITE,
                                       const_cast<char*>("OFF"), 1);
   menuButtons[MENU_ALERT_FLASH_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN,
-                                      currentButton->alertFlash ? TFT_BLACK : TFT_GREEN, TFT_WHITE,
+                                      currentButton->alertFlash ? TFT_GREEN : TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("ON"), 1);
   
   currentY += TEXT_HEIGHT;
@@ -268,7 +268,7 @@ void setupMenu() {
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("None"), 1);
   buttontypebuttoncurrentx += BUTTON_WIDTH;
-  menuButtons[MENU_BUTTON_TYPE_MOMENT].initButton(&tft, buttontypebuttoncurrentx, currentY + BUTTON_HEIGHT/2,
+  menuButtons[MENU_BUTTON_TYPE_MOMENTARY].initButton(&tft, buttontypebuttoncurrentx, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("Moment"), 1);
   buttontypebuttoncurrentx += BUTTON_WIDTH;
@@ -288,8 +288,28 @@ void setupMenu() {
   for (int i = 0; i < MENU_NONE; i++) {
     if (i == MENU_VAL_SEL) {
       menuButtons[i].drawButton(false, currentButton->dashValue->name);
-    } else {
+    } else if (i == MENU_BUTTON_TYPE_MOMENTARY && currentButton->dashValue->buttonType == BUTTON_TYPE_MOMENTARY) {
+      menuButtons[i].drawButton(true);
+    } else if (i == MENU_BUTTON_TYPE_TOGGLE && currentButton->dashValue->buttonType == BUTTON_TYPE_TOGGLE) {
+      menuButtons[i].drawButton(true);
+    } else if (i == MENU_BUTTON_TYPE_NONE && currentButton->dashValue->buttonType == BUTTON_TYPE_NONE) {
+      menuButtons[i].drawButton(true);
+    }else {
       menuButtons[i].drawButton();
+    }
+  }
+}
+
+void drawMenu() {
+  HaltechButton* currentButton = &htButtons[buttonToModifyIndex];
+
+  // Draw all buttons
+  tft.setFreeFont(LABEL1_FONT);
+  for (int i = 0; i < MENU_NONE; i++) {
+    if (i == MENU_VAL_SEL) {
+      menuButtons[i].drawButton(menuButtons[i].isPressed(), currentButton->dashValue->name);
+    } else {
+      menuButtons[i].drawButton(menuButtons[i].isPressed());
     }
   }
 }
@@ -335,8 +355,6 @@ void screenLoop() {
           if (htButtons[buttonIndex].isPressed()) {
             htButtons[buttonIndex].pressedTime = millis();
           }
-          
-          
           // Redraw button with appropriate state
           htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
         }
@@ -360,6 +378,7 @@ void screenLoop() {
       if (lastScreenState != currScreenState) {
         // draw menu
         setupMenu();
+        lastDebounceTime = millis(); // Reset debounce time when entering menu
       }
       lastScreenState = currScreenState;
 
@@ -369,103 +388,99 @@ void screenLoop() {
         
         // Combine touch detection and button state update
         menuButtons[buttonIndex].press(buttonContainsTouch);
-      }
 
-      currentButton = &htButtons[buttonToModifyIndex];
+        // Only process actions on button state change or just pressed
+        if (menuButtons[buttonIndex].justPressed()) {
+          Serial.printf("button %u pressed\n", buttonIndex);
+          currentButton = &htButtons[buttonToModifyIndex];
 
-      // exit
-      if (menuButtons[MENU_EXIT].isPressed()) {
-        currScreenState = STATE_NORMAL;
-        //Serial.println("going to main screen");
-        break;
+          switch(buttonIndex) {
+            case MENU_BACK:
+              currScreenState = STATE_NORMAL;
+              break;
+            case MENU_VAL_SEL:
+              currScreenState = STATE_VAL_SEL;
+              break;
+            case MENU_BUTTON_TEXT_SEL:
+              currScreenState = STATE_BUTTON_TEXT_SEL;
+              break;
+            case MENU_ALERT_MIN_DOWN: {
+              float increment = pow(10, -currentButton->decimalPlaces);
+              currentButton->alertMin -= increment;
+              drawMenu();
+              break;
+            }
+            case MENU_ALERT_MIN_UP: {
+              float increment = pow(10, -currentButton->decimalPlaces);
+              currentButton->alertMin += increment;
+              drawMenu();
+              break;
+            }
+            case MENU_ALERT_MAX_DOWN: {
+              float increment = pow(10, -currentButton->decimalPlaces);
+              currentButton->alertMax -= increment;
+              drawMenu();
+              break;
+            }
+            case MENU_ALERT_MAX_UP: {
+              float increment = pow(10, -currentButton->decimalPlaces);
+              currentButton->alertMax += increment;
+              drawMenu();
+              break;
+            }
+            case MENU_ALERT_BEEP_OFF:
+              currentButton->alertBeep = false;
+              drawMenu();
+              break;
+            case MENU_ALERT_BEEP_ON:
+              currentButton->alertBeep = true;
+              drawMenu();
+              break;
+            case MENU_ALERT_FLASH_OFF:
+              currentButton->alertFlash = false;
+              drawMenu();
+              break;
+            case MENU_ALERT_FLASH_ON:
+              currentButton->alertFlash = true;
+              drawMenu();
+              break;
+            case MENU_DECIMALS_DOWN:
+              if (currentButton->decimalPlaces > 0) {
+                currentButton->decimalPlaces -= 1;
+              }
+              drawMenu();
+              Serial.println("decimals down");
+              break;
+            case MENU_DECIMALS_UP:
+              if (currentButton->decimalPlaces < 5) { // Reasonable upper limit
+                currentButton->decimalPlaces += 1;
+              }
+              drawMenu();
+              Serial.println("decimals up");
+              break;
+            case MENU_UNITS_BACK:
+              currentButton->changeUnits(DIRECTION_PREVIOUS);
+              drawMenu();
+              break;
+            case MENU_UNITS_FORWARD:
+              currentButton->changeUnits(DIRECTION_NEXT);
+              drawMenu();
+              break;
+            case MENU_BUTTON_TYPE_NONE:
+              currentButton->mode = BUTTON_MODE_NONE;
+              drawMenu();
+              break;
+            case MENU_BUTTON_TYPE_MOMENTARY:
+              currentButton->mode = BUTTON_MODE_MOMENTARY;
+              drawMenu();
+              break;
+            case MENU_BUTTON_TYPE_TOGGLE:
+              currentButton->mode = BUTTON_MODE_TOGGLE;
+              drawMenu();
+              break;
+          }
+        }
       }
-
-      // select value
-      if (menuButtons[MENU_VAL_SEL].isPressed()) {
-        currScreenState = STATE_VAL_SEL;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_MIN_DOWN].isPressed()) {
-        currentButton->alertMin -= 1.0;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_MIN_UP].isPressed()) {
-        currentButton->alertMin += 1.0;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_MAX_DOWN].isPressed()) {
-        currentButton->alertMax -= 1.0;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_MAX_UP].isPressed()) {
-        currentButton->alertMax += 1.0;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_BEEP_OFF].isPressed()) {
-        currentButton->alertBeep = false;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_BEEP_ON].isPressed()) {
-        currentButton->alertBeep = true;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_FLASH_OFF].isPressed()) {
-        currentButton->alertFlash = false;
-        break;
-      }
-
-      if (menuButtons[MENU_ALERT_FLASH_ON].isPressed()) {
-        currentButton->alertFlash = true;
-        break;
-      }
-      
-      if (menuButtons[MENU_DECIMALS_DOWN].isPressed()) {
-        currentButton->decimalPlaces -= 1;
-        break;
-      }
-
-      if (menuButtons[MENU_DECIMALS_UP].isPressed()) {
-        currentButton->decimalPlaces += 1;
-        break;
-      }
-
-      if (menuButtons[MENU_UNITS_BACK].isPressed()) {
-        currentButton->changeUnits(DIRECTION_PREVIOUS);
-        break;
-      }
-
-      if (menuButtons[MENU_UNITS_FORWARD].isPressed()) {
-        currentButton->changeUnits(DIRECTION_NEXT);
-        break;
-      }
-
-      if (menuButtons[MENU_BUTTON_TYPE_NONE].isPressed()) {
-        currentButton->mode = BUTTON_MODE_NONE;
-        break;
-      }
-
-      if (menuButtons[MENU_BUTTON_TYPE_MOMENT].isPressed()) {
-        currentButton->mode = BUTTON_MODE_MOMENTARY;
-        break;
-      }
-
-      if (menuButtons[MENU_BUTTON_TYPE_TOGGLE].isPressed()) {
-        currentButton->mode = BUTTON_MODE_TOGGLE;
-        break;
-      }
-
-      if (menuButtons[MENU_BUTTON_TEXT_SEL].isPressed()) {
-        currScreenState = STATE_VAL_SEL;
-        break;
-      }
-
       break;
 
     case STATE_VAL_SEL:
