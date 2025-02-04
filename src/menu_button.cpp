@@ -1,4 +1,4 @@
-#include "haltech_button.h"
+#include "menu_button.h"
 #include <sstream>
 #include "screen.h"
 #include <iomanip>
@@ -50,17 +50,21 @@ void MenuButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum)
   _textdatum = datum;
 }
 
-void MenuButton::drawButton(bool inverted, String long_name) {
+void MenuButton::drawButton(bool inverted, String long_name, bool selected) {
   uint16_t fill, outline, text;
 
-  if(!inverted) {
+  if (inverted) {
+    fill = _fillcolor;
+    outline = _outlinecolor;
+    text = _textcolor;
+  } else if (selected) {
+    fill = _selectedcolor;
+    outline = _outlinecolor;
+    text = _textcolor;
+  } else {
     fill    = _fillcolor;
     outline = _outlinecolor;
     text    = _textcolor;
-  } else {
-    fill    = _textcolor;
-    outline = _outlinecolor;
-    text    = _fillcolor;
   }
 
   uint8_t r = min(_w, _h) / 4; // Corner radius

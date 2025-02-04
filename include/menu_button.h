@@ -20,7 +20,7 @@ class MenuButton
   // Adjust text datum and x, y deltas
   void     setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
   
-  void     drawButton(bool inverted = false, String long_name = "");
+  void     drawButton(bool inverted = false, String long_name = "", bool selected = false);
   bool     contains(int16_t x, int16_t y);
 
   void     press(bool p);
@@ -35,6 +35,7 @@ class MenuButton
   uint16_t _w, _h;   // Width and height of button
   uint8_t  _textsize, _textdatum; // Text size multiplier and text datum for button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
+  uint16_t _selectedcolor = TFT_GREEN;
   char     _label[10]; // Button text is 9 chars maximum unless long_name used
 
   bool  currstate, laststate; // Button states

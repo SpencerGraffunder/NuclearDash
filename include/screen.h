@@ -101,9 +101,9 @@ typedef enum {
   MENU_DECIMALS_UP,
   MENU_UNITS_BACK,
   MENU_UNITS_FORWARD,
-  MENU_BUTTON_TYPE_NONE,
-  MENU_BUTTON_TYPE_MOMENTARY,
-  MENU_BUTTON_TYPE_TOGGLE,
+  MENU_BUTTON_MODE_NONE,
+  MENU_BUTTON_MODE_MOMENTARY,
+  MENU_BUTTON_MODE_TOGGLE,
   MENU_BUTTON_TEXT_SEL,
   MENU_NONE,
 } menuButtonName_e;
@@ -117,7 +117,7 @@ extern uint8_t buttonToModifyIndex;
 void screenSetup();
 void screenLoop();
 void touch_calibrate();
-
+void drawMenu();
 bool saveLayout();
 bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight);
 

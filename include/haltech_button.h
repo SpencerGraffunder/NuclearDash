@@ -75,12 +75,6 @@ static const UnitOption unitOptions[] = {
     {HT_TOTAL_FUEL_USED_T1, {UNIT_LITERS, UNIT_GALLONS}, 2},
 };
 
-typedef enum {
-  BUTTON_MODE_NONE,
-  BUTTON_MODE_MOMENTARY,
-  BUTTON_MODE_TOGGLE,
-} buttonMode_e;
-
 class HaltechButton
 {
 public:

@@ -240,7 +240,7 @@ void HaltechCan::process()
   while (true) { // escape with breaks or when it's gone for too long
     twai_message_t message;
     esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
-    Serial.printf("TWAI: 0x%04x\n", result);
+    //Serial.printf("TWAI: 0x%04x\n", result);
     // if (millis() - lastPreemptTime > preemptLimit) {
     //   Serial.println("preempting");
     //   lastPreemptTime = millis();
@@ -250,7 +250,7 @@ void HaltechCan::process()
     // Break the loop if no message is available
     if (result != ESP_OK) {
       if (result == ESP_ERR_TIMEOUT) {
-        Serial.println("No more messages");
+        //Serial.println("No more messages");
       } else {
         Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
       }
