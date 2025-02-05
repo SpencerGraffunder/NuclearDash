@@ -97,6 +97,9 @@ void HaltechButton::drawButton(bool inverted) {
   if ((mode != BUTTON_MODE_TOGGLE) && pressedState) {
     drawInverted = true;
   }
+  if (mode == BUTTON_MODE_NONE) {
+    drawInverted = false;
+  }
   if(drawInverted) {
     fill    = TFT_GREEN;
     outline = _outlinecolor;
