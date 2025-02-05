@@ -75,6 +75,7 @@ extern uint16_t keyColor[15];
 // Invoke the TFT_eSPI button class and create all the button objects
 extern HaltechButton htButtons[16];
 
+extern QueueHandle_t screenQueue;
 
 extern const uint8_t nButtons;
 extern HaltechDisplayType_e buttonDisplayTypes[];
@@ -120,5 +121,11 @@ void touch_calibrate();
 void drawMenu();
 bool saveLayout();
 bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight);
+
+void setupSelectValueScreen();
+void drawSelectValueScreen();
+void handleValSelValueSelection(int valueIndex);
+void navigateValSelToNextPage();
+void navigateValSelToPreviousPage();
 
 #endif // _SCREEN_H

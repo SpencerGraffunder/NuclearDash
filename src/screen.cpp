@@ -36,6 +36,8 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
     {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, BUTTON_MODE_NONE},
 };
 
+QueueHandle_t screenQueue;
+
 // Invoke the TFT_eSPI button class and create all the button objects
 HaltechButton htButtons[16];
 
@@ -138,6 +140,9 @@ void screenSetup() {
   uint16_t buttonHeight = TFT_WIDTH / nRows;
 
   loadLayout(tft, buttonWidth, buttonHeight);
+
+  // Create a queue for screen updates
+  screenQueue = xQueueCreate(10, sizeof(HaltechDashValue));
 }
 
 void setupMenu() {
@@ -313,21 +318,26 @@ void drawMenu() {
   }
 }
 
-void setupValSelection() {
-
-}
-
 void screenLoop() {
+
+  // process any incoming CAN messages
+  HaltechDashValue dashValue;
+  while (xQueueReceive(screenQueue, &dashValue, 0) == pdTRUE) {
+    // Update the screen with the new dash value
+    // Find the corresponding button and update its value
+    for (uint8_t i = 0; i < nButtons; i++) {
+      if (htButtons[i].dashValue->can_id == dashValue.can_id) {
+        htButtons[i].dashValue->scaled_value = dashValue.scaled_value;
+        htButtons[i].drawValue();
+        break;
+      }
+    }
+  }
+
   static unsigned long lastDebounceTime = 0;
   static ScreenState_e lastScreenState;
   const unsigned long debounceDelay = 10;
   HaltechButton* currentButton;
-  
-  // Non-blocking debounce
-  if (millis() - lastDebounceTime < debounceDelay) {
-    return; // Skip processing if not enough time has passed
-  }
-
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
 
@@ -484,9 +494,10 @@ void screenLoop() {
 
     case STATE_VAL_SEL:
       if (lastScreenState != currScreenState) {
-        // draw val sel
+        setupSelectValueScreen();
+        drawSelectValueScreen();
       }
-      currScreenState = STATE_MENU;
+      //currScreenState = STATE_MENU;
       break;
   }
   
@@ -572,4 +583,87 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
     }
 
     return true;
+}
+
+int buttonToModify = -1;
+int currentPage = 0;
+const int valuesPerPage = 22; // 2 columns * 11 rows
+
+void setupSelectValueScreen() {
+    tft.fillScreen(TFT_BLACK);
+    int currentY = 0;  // Starting Y position
+    tft.setTextDatum(TL_DATUM);
+
+    valSelButtons[0].initButtonUL(&tft, 0, currentY,
+                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Back"), 1);
+
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    char buttonconfigstr[17];
+    sprintf(buttonconfigstr, "Button %u Config", buttonToModifyIndex+1);
+    tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH, currentY + TOP_MARGIN);
+
+    currentY += TEXT_HEIGHT;
+
+    for (int i = 0; i < valuesPerPage; ++i) {
+        int index = currentPage * valuesPerPage + i;
+        if (index >= HT_NONE) break; // No more values to display
+
+        int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
+        int y = currentY + (i / 2) * BUTTON_HEIGHT;
+
+        valSelButtons[i + 1].initButtonUL(&tft, x, y,
+                                          TFT_HEIGHT / 2 - LEFT_MARGIN, BUTTON_HEIGHT,
+                                          TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                          const_cast<char*>(dashValues[index].name), 1);
+    }
+}
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+void drawSelectValueScreen() {
+    tft.fillScreen(TFT_BLACK);
+    int currentY = 0;  // Starting Y position
+    tft.setTextDatum(TL_DATUM);
+
+    valSelButtons[0].drawButton();
+
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    char buttonconfigstr[17];
+    sprintf(buttonconfigstr, "Button %u Config", buttonToModifyIndex + 1);
+    tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH, currentY + TOP_MARGIN);
+
+    currentY += TEXT_HEIGHT;
+
+    int startIndex = currentPage * valuesPerPage;
+    int endIndex = MIN(startIndex + valuesPerPage, HT_NONE);
+
+    for (int i = startIndex; i < endIndex; ++i) {
+        int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
+        int y = currentY + (i / 2) * BUTTON_HEIGHT;
+
+        valSelButtons[i - startIndex + 1].drawButton();
+    }
+}
+
+void handleValSelValueSelection(int valueIndex) {
+    // Update the button configuration with the selected value
+    currentButtonConfigs[buttonToModifyIndex].displayType = static_cast<HaltechDisplayType_e>(valueIndex);
+
+    // Return to the menu screen
+    currScreenState = STATE_MENU;
+}
+
+void navigateValSelToNextPage() {
+    if ((currentPage + 1) * valuesPerPage < HT_NONE) {
+        currentPage++;
+        drawSelectValueScreen();
+    }
+}
+
+void navigateValSelToPreviousPage() {
+    if (currentPage > 0) {
+        currentPage--;
+        drawSelectValueScreen();
+    }
 }

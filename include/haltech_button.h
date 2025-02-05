@@ -12,7 +12,7 @@ typedef enum
   BUTTON_STATUS_COLOR_RED,
 } buttonStatusColor_e;
 
-const unsigned long longPressThresholdTime = 500;
+const unsigned long longPressThresholdTime = 1000;
 
 struct UnitOption {
     HaltechDisplayType_e type;

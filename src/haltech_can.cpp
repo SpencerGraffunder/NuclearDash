@@ -286,6 +286,9 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();
+
+      // Send the updated dash value to the screen queue
+      xQueueSend(screenQueue, dashValue, portMAX_DELAY);
     }
   }
 
