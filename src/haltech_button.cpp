@@ -45,6 +45,10 @@ void HaltechButton::setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datu
 }
 
 void HaltechButton::drawValue() {
+  if (currScreenState != STATE_NORMAL) {
+    return;
+  }
+
   char buffer[10];
 
   uint16_t fill, text;

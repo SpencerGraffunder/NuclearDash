@@ -109,8 +109,33 @@ typedef enum {
   MENU_NONE,
 } menuButtonName_e;
 
+typedef enum {
+  VAL_SEL_1,
+  VAL_SEL_2,
+  VAL_SEL_3,
+  VAL_SEL_4,
+  VAL_SEL_5,
+  VAL_SEL_6,
+  VAL_SEL_7,
+  VAL_SEL_8,
+  VAL_SEL_9,
+  VAL_SEL_10,
+  VAL_SEL_11,
+  VAL_SEL_12,
+  VAL_SEL_13,
+  VAL_SEL_14,
+  VAL_SEL_15,
+  VAL_SEL_16,
+  VAL_SEL_17,
+  VAL_SEL_18,
+  VAL_SEL_BACK,
+  VAL_SEL_PAGE_BACK,
+  VAL_SEL_PAGE_FORWARD,
+  VAL_SEL_NONE,
+} valSelButtonName_e;
+
 extern MenuButton menuButtons[MENU_NONE];
-extern MenuButton valSelButtons[26];
+extern MenuButton valSelButtons[VAL_SEL_NONE];
 
 extern ScreenState_e currScreenState;
 extern uint8_t buttonToModifyIndex;
