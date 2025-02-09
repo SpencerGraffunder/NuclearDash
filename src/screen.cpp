@@ -143,6 +143,8 @@ void screenSetup() {
 
   // Create a queue for screen updates
   screenQueue = xQueueCreate(10, sizeof(HaltechDashValue));
+
+  tft.setFreeFont(LABEL2_FONT);
 }
 
 void setupMenu() {
@@ -152,6 +154,7 @@ void setupMenu() {
   HaltechButton* buttonToModify = &htButtons[buttonToModifyIndex];
 
   tft.setTextDatum(TL_DATUM);
+  // tft.setFreeFont(LABEL1_FONT);
 
   menuButtons[MENU_BACK].initButtonUL(&tft, 0, currentY,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
@@ -260,6 +263,7 @@ void drawMenu() {
 
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  // tft.setFreeFont(LABEL1_FONT);
 
   int currentY = 0;  // Starting Y position
 
@@ -286,14 +290,13 @@ void drawMenu() {
   tft.drawString(String(buttonToModify->decimalPlaces), TFT_HEIGHT - BUTTON_WIDTH*1.5, TEXT_HEIGHT*6 + TEXT_YOFFSET);
 
   // Draw Units 
-  tft.setFreeFont(LABEL2_FONT);
+  // tft.setFreeFont(LABEL2_FONT);
   tft.drawString(unitDisplayStrings[buttonToModify->displayUnit], TFT_HEIGHT - BUTTON_WIDTH*1.5, TEXT_HEIGHT*7 + TEXT_YOFFSET);
-  tft.setFreeFont(LABEL1_FONT);
 
   // Draw all buttons
-  tft.setFreeFont(LABEL1_FONT);
+  // tft.setFreeFont(LABEL1_FONT);
   for (int i = 0; i < MENU_NONE; i++) {
-    Serial.printf("drawing button %u\n", i);
+    // Serial.printf("drawing button %u\n", i);
 
     switch (i) {
       case MENU_VAL_SEL:
@@ -301,17 +304,28 @@ void drawMenu() {
         break;
       case MENU_BUTTON_MODE_MOMENTARY:
         menuButtons[i].drawButton(false, "", buttonToModify->mode == BUTTON_MODE_MOMENTARY);
-        Serial.printf("drawing button type momentary %u\n", buttonToModify->mode == BUTTON_MODE_MOMENTARY);
+        // Serial.printf("drawing button type momentary %u\n", buttonToModify->mode == BUTTON_MODE_MOMENTARY);
         break;
       case MENU_BUTTON_MODE_TOGGLE:
         menuButtons[i].drawButton(false, "", buttonToModify->mode == BUTTON_MODE_TOGGLE);
-        Serial.printf("drawing button type toggle %u\n", buttonToModify->mode == BUTTON_MODE_TOGGLE);
+        // Serial.printf("drawing button type toggle %u\n", buttonToModify->mode == BUTTON_MODE_TOGGLE);
         break;
       case MENU_BUTTON_MODE_NONE:
         menuButtons[i].drawButton(false, "", buttonToModify->mode == BUTTON_MODE_NONE);
-        Serial.printf("drawing button type none %u\n", buttonToModify->mode == BUTTON_MODE_NONE);
+        // Serial.printf("drawing button type none %u\n", buttonToModify->mode == BUTTON_MODE_NONE);
         break;
-      
+      case MENU_ALERT_BEEP_OFF:
+        menuButtons[i].drawButton(false, "", !htButtons[buttonToModifyIndex].alertBeep);
+        break;
+      case MENU_ALERT_BEEP_ON:
+        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertBeep);
+        break;
+      case MENU_ALERT_FLASH_OFF:
+        menuButtons[i].drawButton(false, "", !htButtons[buttonToModifyIndex].alertFlash);
+        break;
+      case MENU_ALERT_FLASH_ON:
+        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertFlash);
+        break;
       default:
         menuButtons[i].drawButton();
     }
@@ -336,6 +350,11 @@ void screenLoop() {
 
   static unsigned long lastDebounceTime = 0;
   static ScreenState_e lastScreenState;
+
+  // beep is global so save states here instead of in the button object
+  static bool beepState = false;
+  static uint64_t lastBeepTime = 0;
+
   const unsigned long debounceDelay = 10;
   HaltechButton* buttonToModify;
   uint16_t t_x = 0, t_y = 0;
@@ -351,7 +370,15 @@ void screenLoop() {
       }
       lastScreenState = currScreenState;
       
+      static bool isAButtonBeeping = false;
+
       for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+
+        // check if we need to be beeping (when beep is enabled and alerting state)
+        if (htButtons[buttonIndex].alertBeep && htButtons[buttonIndex].alertState) {
+          isAButtonBeeping = true;
+        }
+
         bool wasPressed = htButtons[buttonIndex].isPressed();
         bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
         
@@ -400,7 +427,7 @@ void screenLoop() {
 
         // Only process actions on button state change or just pressed
         if (menuButtons[buttonIndex].justPressed()) {
-          Serial.printf("button %u pressed\n", buttonIndex);
+          Serial.printf("menu button %u pressed\n", buttonIndex);
           buttonToModify = &htButtons[buttonToModifyIndex];
 
           switch(buttonIndex) {
@@ -501,14 +528,14 @@ void screenLoop() {
 
       for (uint8_t buttonIndex = 0; buttonIndex < VAL_SEL_NONE; buttonIndex++) {
         bool wasPressed = valSelButtons[buttonIndex].isPressed();
-        bool buttonContainsTouch = isValidTouch && menuButtons[buttonIndex].contains(t_x, t_y);
+        bool buttonContainsTouch = isValidTouch && valSelButtons[buttonIndex].contains(t_x, t_y);
         
         // Combine touch detection and button state update
         valSelButtons[buttonIndex].press(buttonContainsTouch);
 
         // Only process actions on button state change or just pressed
         if (valSelButtons[buttonIndex].justPressed()) {
-          Serial.printf("button %u pressed\n", buttonIndex);
+          Serial.printf("valsel button %u pressed\n", buttonIndex);
           buttonToModify = &htButtons[buttonToModifyIndex];
 
           switch (buttonIndex) {
@@ -526,6 +553,7 @@ void screenLoop() {
             case VAL_SEL_2:
               break;
           }
+          break;
         }
       }
 
@@ -639,16 +667,17 @@ void setupSelectValueScreen() {
     currentY += TEXT_HEIGHT;
 
     for (int i = VAL_SEL_1; i <= VAL_SEL_18; i++) {
+        Serial.printf("init button %d\n", i);
         int index = currentPage * valuesPerPage + i;
         if (index >= HT_NONE) break; // No more values to display
 
         int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
         int y = currentY + (i / 2) * BUTTON_HEIGHT;
 
-        valSelButtons[i + 1].initButtonUL(&tft, x, y,
-                                          TFT_HEIGHT / 2 - LEFT_MARGIN, BUTTON_HEIGHT,
-                                          TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                          const_cast<char*>(dashValues[index].name), 1);
+        valSelButtons[i].initButtonUL(&tft, x, y,
+                                      TFT_HEIGHT / 2, BUTTON_HEIGHT,
+                                      TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>(dashValues[index].name), 1);
     }
 }
 
@@ -659,34 +688,33 @@ void drawSelectValueScreen() {
     tft.fillScreen(TFT_BLACK);
     int currentY = 0;  // Starting Y position
     tft.setTextDatum(TL_DATUM);
+    // tft.setFreeFont(LABEL1_FONT);
 
     valSelButtons[VAL_SEL_BACK].drawButton();
 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     char buttonconfigstr[17];
-    sprintf(buttonconfigstr, "Button %u Config", buttonToModifyIndex + 1);
+    sprintf(buttonconfigstr, "Select Value");
     tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH, currentY + TOP_MARGIN);
 
     valSelButtons[VAL_SEL_PAGE_BACK].drawButton();
     valSelButtons[VAL_SEL_PAGE_FORWARD].drawButton();
 
-    currentY += TEXT_HEIGHT;
+    // tft.setFreeFont(LABEL2_FONT);
 
-    for (int i = 0; i < valuesPerPage; i++) {
-      if (i >= HT_NONE) {
+    currentY += TEXT_HEIGHT;
+    int pageOffset = currentPage * valuesPerPage;
+
+    for (int i = VAL_SEL_1; i <= VAL_SEL_18; i++) {
+      if (i + pageOffset >= HT_NONE) {
         break;
       }
-      Serial.printf("drawing val sel button %d with name %s from dashval[%d]\n", VAL_SEL_1 + i, dashValues[i].name, i);
-      valSelButtons[VAL_SEL_1 + i].drawButton(false, dashValues[i].name, false);
+      Serial.printf("drawing val sel button %d with name %s from dashval[%d]\n", i, dashValues[i+pageOffset].name, i);
+      valSelButtons[i].drawButton(false, dashValues[i+pageOffset].name, false);
       int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
       int y = currentY + (i / 2) * BUTTON_HEIGHT;
     }
-
-    tft.setFreeFont(LABEL2_FONT);
-
-    // for (int i = startIndex; i < endIndex; i++) {
-    //     valSelButtons[i - startIndex + 1].drawButton(false, dashValues[i].name, false);
-    // }
+    
     Serial.println("end drawing val sel");
 }
 

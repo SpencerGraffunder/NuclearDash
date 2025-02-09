@@ -99,8 +99,12 @@ public:
   uint8_t decimalPlaces = 1;
   float alertMin = -1;
   float alertMax = 1;
+  bool alertState = false;
   bool alertBeep = false;
+  // beep is global, flash is per-button so we need to track those states here
   bool alertFlash = false;
+  bool flashState = false;
+  uint64_t lastFlashTime = 0;
   void changeUnits(menuSelectionDirection_e direction);
 
 private:

@@ -75,10 +75,15 @@ void HaltechButton::drawValue() {
 
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
+  // update the overall alert state
+  alertState = (convertedValue > alertMax || convertedValue < alertMin);
+
   // Set text datum to middle center for perfect centering
   _gfx->setTextDatum(MC_DATUM);
   
   _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
+
+  tft.setFreeFont(LABEL2_FONT);
 }
 
 void HaltechButton::drawGraph() {
@@ -171,14 +176,19 @@ void HaltechButton::changeUnits(menuSelectionDirection_e direction) {
   uint8_t nextUnitIndex = -1;
   for (const UnitOption& option : unitOptions) {
     if (option.type == this->dashValue->type) {
+      Serial.printf("found matching type %d\n", option.type);
       for (uint8_t i = 0; i < option.count; i++) {
         if (option.units[i] == this->displayUnit) {
+          Serial.printf("found matching unit index %d\n", i);
           if (direction == DIRECTION_NEXT) {
             nextUnitIndex = (i + 1) % option.count; // loop around
           } else if (direction == DIRECTION_PREVIOUS) {
             nextUnitIndex = (i - 1 + option.count) % option.count; // add option count to make sure it doesn't go negative
           }
+          Serial.printf("changing to unit %d", nextUnitIndex);
           this->displayUnit = option.units[nextUnitIndex];
+          drawMenu();
+          return;
         }
       }
     }
