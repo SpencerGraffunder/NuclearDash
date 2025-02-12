@@ -134,6 +134,9 @@ void screenSetup() {
   // Clear the screen
   tft.fillScreen(TFT_BLACK);
 
+  pinMode(PIN_BEEP, OUTPUT);
+  digitalWrite(PIN_BEEP, HIGH);
+
   uint8_t nCols = 4;
   uint8_t nRows = 4;
   uint16_t buttonWidth = TFT_HEIGHT / nCols;
@@ -359,6 +362,8 @@ void screenLoop() {
   HaltechButton* buttonToModify;
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
+      
+  bool isAButtonBeeping = false;
 
   switch (currScreenState) {
     case STATE_NORMAL:
@@ -369,14 +374,13 @@ void screenLoop() {
         }
       }
       lastScreenState = currScreenState;
-      
-      static bool isAButtonBeeping = false;
 
       for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
 
         // check if we need to be beeping (when beep is enabled and alerting state)
         if (htButtons[buttonIndex].alertBeep && htButtons[buttonIndex].alertState) {
           isAButtonBeeping = true;
+          Serial.printf("button %d is beeping\n", buttonIndex);
         }
 
         bool wasPressed = htButtons[buttonIndex].isPressed();
@@ -409,6 +413,7 @@ void screenLoop() {
           break;
         }
       }
+
       break;
     case STATE_MENU:
       if (lastScreenState != currScreenState) {
@@ -558,6 +563,18 @@ void screenLoop() {
       }
 
       break;
+  }
+
+  if (isAButtonBeeping) {
+    //Serial.printf("button is beeping\n");
+    digitalWrite(PIN_BEEP, beepState);
+    if (millis() - lastBeepTime > 100) {
+      Serial.printf("changing beep state\n");
+      beepState = !beepState;
+      lastBeepTime = millis();
+    }
+  } else {
+    digitalWrite(PIN_BEEP, HIGH);
   }
   
   // Update last debounce time
