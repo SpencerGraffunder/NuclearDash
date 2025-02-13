@@ -5,6 +5,7 @@
 #include "haltech_dash_values_init.h"
 #include "webpage.h"
 #include <unordered_map>
+#include "esp_intr_alloc.h"
 
 const char* unitDisplayStrings[] = {
     "RPM",       // UNIT_RPM
@@ -50,6 +51,15 @@ unsigned long KAinterval = 150;             // 50ms interval for keep aliv frame
 unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info frame
 unsigned long KAintervalMillis = 0;         // storage for millis counter
 unsigned long ButtonInfoIntervalMillis = 0; // storage for millis counter
+
+volatile bool canMessageReceived = false; // rename
+twai_message_t canReceivedMessage; // rename 
+
+void IRAM_ATTR onCanReceive(void* arg) {
+    if (twai_receive(&canReceivedMessage, 0) == ESP_OK) {
+        canMessageReceived = true;
+    }
+}
 
 float HaltechDashValue::convertToUnit(HaltechUnit_e toUnit)
 {
@@ -189,6 +199,13 @@ bool HaltechCan::begin(long baudRate)
       return false;
   }
 
+  // Allocate and register the interrupt handler
+    esp_err_t err = esp_intr_alloc(ETS_TWAI_INTR_SOURCE, ESP_INTR_FLAG_IRAM, onCanReceive, NULL, NULL);
+    if (err != ESP_OK) {
+        Serial.printf("Failed to allocate interrupt\n");
+        return false;
+    }
+
   // Start TWAI driver
   if (twai_start() == ESP_OK) {
       Serial.printf("Driver started\n");
@@ -196,8 +213,6 @@ bool HaltechCan::begin(long baudRate)
       Serial.printf("Failed to start driver\n");
       return false;
   }
-
-  // updateHashList();
 
   return true;
 }
@@ -235,31 +250,32 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
-  static unsigned long lastPreemptTime = 0;
-  while (true) { // escape with breaks or when it's gone for too long
-    twai_message_t message;
-    esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
-    //Serial.printf("TWAI: 0x%04x\n", result);
-    // if (millis() - lastPreemptTime > preemptLimit) {
-    //   Serial.println("preempting");
-    //   lastPreemptTime = millis();
-    //   break;
-    // }
-
-    // Break the loop if no message is available
-    if (result != ESP_OK) {
-      if (result == ESP_ERR_TIMEOUT) {
-        //Serial.println("No more messages");
-      } else {
-        Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
-      }
-      break;
-    }
-    processCANData(message.identifier, 
-                    message.data_length_code, 
-                    message.data);
+  if (canMessageReceived) {
+    canMessageReceived = false;
+    processCANData(canReceivedMessage.identifier, 
+                    canReceivedMessage.data_length_code, 
+                    canReceivedMessage.data);
   }
+
+  // unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
+  // static unsigned long lastPreemptTime = 0;
+  // while (true) { // escape with breaks or when it's gone for too long
+  //   twai_message_t message;
+  //   esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
+
+  //   // Break the loop if no message is available
+  //   if (result != ESP_OK) {
+  //     if (result == ESP_ERR_TIMEOUT) {
+  //       //Serial.println("No more messages");
+  //     } else {
+  //       Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
+  //     }
+  //     break;
+  //   }
+  //   processCANData(message.identifier, 
+  //                   message.data_length_code, 
+  //                   message.data);
+  // }
 
   if (millis() - KAintervalMillis >= KAinterval)
   {

@@ -4,6 +4,8 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 
+SemaphoreHandle_t dashValueMutex;
+
 char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
@@ -135,6 +137,7 @@ void screenSetup() {
   tft.fillScreen(TFT_BLACK);
 
   pinMode(PIN_BEEP, OUTPUT);
+  delay(20);
   digitalWrite(PIN_BEEP, HIGH);
 
   uint8_t nCols = 4;
@@ -146,6 +149,8 @@ void screenSetup() {
 
   // Create a queue for screen updates
   screenQueue = xQueueCreate(10, sizeof(HaltechDashValue));
+
+  dashValueMutex = xSemaphoreCreateMutex();
 
   tft.setFreeFont(LABEL2_FONT);
 }
@@ -339,15 +344,13 @@ void screenLoop() {
 
   // process any incoming CAN messages
   HaltechDashValue dashValue;
-  while (xQueueReceive(screenQueue, &dashValue, 0) == pdTRUE) {
-    // Update the screen with the new dash value
-    // Find the corresponding button and update its value
-    for (uint8_t i = 0; i < nButtons; i++) {
-      if (htButtons[i].dashValue->can_id == dashValue.can_id) {
-        htButtons[i].dashValue->scaled_value = dashValue.scaled_value;
-        htButtons[i].drawValue();
-        break;
-      }
+  // Update the screen with the new dash value
+  // Find the corresponding button and update its value
+  for (uint8_t i = 0; i < nButtons; i++) {
+    if (htButtons[i].dashValue->can_id == dashValue.can_id) {
+      htButtons[i].dashValue->scaled_value = dashValue.scaled_value;
+      htButtons[i].drawValue();
+      break;
     }
   }
 
