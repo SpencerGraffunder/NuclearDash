@@ -14,11 +14,9 @@ void setup() {
 
   screenSetup();
 
-  if (!htc.begin(1000E3)) {
-    while (1) {
-      Serial.println("Haltech CAN init failed");
-      delay(500);
-    }
+  while (!htc.begin(1000E3)) {
+    Serial.println("Haltech CAN init failed");
+    delay(500);
   }
 
   webpageSetup();
@@ -27,7 +25,10 @@ void setup() {
 }
 
 void loop(void) {
+  Serial.println("htc");
   htc.process();
+  Serial.println("webpage");
   webpageLoop();
+  Serial.println("screen");
   screenLoop();
 }

@@ -52,15 +52,6 @@ unsigned long ButtonInfoInterval = 30;      // 30ms interval for button info fra
 unsigned long KAintervalMillis = 0;         // storage for millis counter
 unsigned long ButtonInfoIntervalMillis = 0; // storage for millis counter
 
-volatile bool canMessageReceived = false; // rename
-twai_message_t canReceivedMessage; // rename 
-
-void IRAM_ATTR onCanReceive(void* arg) {
-    if (twai_receive(&canReceivedMessage, 0) == ESP_OK) {
-        canMessageReceived = true;
-    }
-}
-
 float HaltechDashValue::convertToUnit(HaltechUnit_e toUnit)
 {
   // If units are the same, no conversion is needed
@@ -185,36 +176,37 @@ HaltechCan::HaltechCan()
 
 bool HaltechCan::begin(long baudRate)
 {
-  delay(1000);
+    delay(1000);
 
-  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
-  twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
-  twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    // First, uninstall any existing driver
+    twai_driver_uninstall();
+    
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
+    
+    // Enable RX data alerts
+    g_config.alerts_enabled = TWAI_ALERT_RX_DATA;
+    g_config.rx_queue_len = 40;
+    
+    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-  // Install TWAI driver
-  if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-      Serial.printf("Driver installed\n");
-  } else {
-      Serial.printf("Failed to install driver\n");
-      return false;
-  }
-
-  // Allocate and register the interrupt handler
-    esp_err_t err = esp_intr_alloc(ETS_TWAI_INTR_SOURCE, ESP_INTR_FLAG_IRAM, onCanReceive, NULL, NULL);
-    if (err != ESP_OK) {
-        Serial.printf("Failed to allocate interrupt\n");
+    // Install TWAI driver
+    esp_err_t install_err = twai_driver_install(&g_config, &t_config, &f_config);
+    if (install_err != ESP_OK) {
+        Serial.printf("Failed to install driver. Error code: 0x%x\n", install_err);
         return false;
     }
 
-  // Start TWAI driver
-  if (twai_start() == ESP_OK) {
-      Serial.printf("Driver started\n");
-  } else {
-      Serial.printf("Failed to start driver\n");
-      return false;
-  }
+    // Start TWAI driver
+    if (twai_start() == ESP_OK) {
+        Serial.printf("Driver started\n");
+    } else {
+        Serial.printf("Failed to start driver\n");
+        twai_driver_uninstall();
+        return false;
+    }
 
-  return true;
+    return true;
 }
 
 uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uint8_t end_byte, bool is_signed)
@@ -250,11 +242,26 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
 
 void HaltechCan::process()
 {
-  if (canMessageReceived) {
-    canMessageReceived = false;
-    processCANData(canReceivedMessage.identifier, 
-                    canReceivedMessage.data_length_code, 
-                    canReceivedMessage.data);
+  uint32_t alerts;
+  twai_message_t message;
+
+  // Wait for alert
+  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(1000)) == ESP_OK) {
+      if (alerts & TWAI_ALERT_RX_DATA) {
+          // Message received
+          esp_err_t result = twai_receive(&message, 0);
+          if (result == ESP_OK) {
+              processCANData(message.identifier, message.data_length_code, message.data);
+          } else {
+              Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
+          }
+      }
+      if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
+        Serial.println("RX Queue Full");
+      }
+      Serial.printf("Alerts: 0x%x\n", alerts);
+  } else {
+    Serial.println("No alerts");
   }
 
   // unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
@@ -292,7 +299,7 @@ void HaltechCan::process()
 
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
-  // Serial.printf("Processing ID: %lu\n", rxId);
+  Serial.printf("Processing ID: %lu\n", rxId);
   for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
   {
     HaltechButton* button = &htButtons[buttonIndex];
@@ -302,9 +309,6 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();
-
-      // Send the updated dash value to the screen queue
-      xQueueSend(screenQueue, dashValue, portMAX_DELAY);
     }
   }
 

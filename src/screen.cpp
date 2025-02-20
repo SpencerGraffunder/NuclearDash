@@ -365,207 +365,236 @@ void screenLoop() {
   HaltechButton* buttonToModify;
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
+
+  static bool waitingForTouchRelease = false;
+  bool justChangedStates = false;
+  // Handle state transitions and touch release
+  if (justChangedStates) {
+    waitingForTouchRelease = true;  // Set flag on state change
+    lastScreenState = currScreenState;
+    justChangedStates = true;
+  }
+
+  // If waiting for release and no touch detected, clear the flag
+  if (waitingForTouchRelease && !isValidTouch) {
+    waitingForTouchRelease = false;
+  }
       
   bool isAButtonBeeping = false;
 
+  // process drawing
   switch (currScreenState) {
     case STATE_NORMAL:
-      if (lastScreenState != currScreenState) {
+      if (justChangedStates) {
         tft.fillScreen(TFT_BLACK);
         for (uint8_t i = 0; i < nButtons; i++) {
           htButtons[i].drawButton();
         }
       }
-      lastScreenState = currScreenState;
 
       for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
-
         // check if we need to be beeping (when beep is enabled and alerting state)
         if (htButtons[buttonIndex].alertBeep && htButtons[buttonIndex].alertState) {
           isAButtonBeeping = true;
           Serial.printf("button %d is beeping\n", buttonIndex);
         }
-
-        bool wasPressed = htButtons[buttonIndex].isPressed();
-        bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
-        
-        // Combine touch detection and button state update
-        htButtons[buttonIndex].press(buttonContainsTouch);
-
-        // Only redraw if button state has changed
-        if (htButtons[buttonIndex].isPressed() != wasPressed) {
-          // Track pressed time for potential long press functionality
-          if (htButtons[buttonIndex].isPressed()) {
-            htButtons[buttonIndex].pressedTime = millis();
-          }
-          // Redraw button with appropriate state
-          htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
-        }
-        // Long press detected
-        if (htButtons[buttonIndex].isPressed() && 
-            (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
-          // Clear the screen
-          tft.fillScreen(TFT_BLACK);
-
-          // change the state
-          currScreenState = STATE_MENU;
-          Serial.println("going to menu");
-
-          // So the menu knows which button/info to modify
-          buttonToModifyIndex = buttonIndex;
-          break;
-        }
       }
-
       break;
     case STATE_MENU:
-      if (lastScreenState != currScreenState) {
+      if (justChangedStates) {
         // draw menu
         setupMenu();
         lastDebounceTime = millis(); // Reset debounce time when entering menu
       }
-      lastScreenState = currScreenState;
-
-      for (uint8_t buttonIndex = 0; buttonIndex < MENU_NONE; buttonIndex++) {
-        bool wasPressed = menuButtons[buttonIndex].isPressed();
-        bool buttonContainsTouch = isValidTouch && menuButtons[buttonIndex].contains(t_x, t_y);
-        
-        // Combine touch detection and button state update
-        menuButtons[buttonIndex].press(buttonContainsTouch);
-
-        // Only process actions on button state change or just pressed
-        if (menuButtons[buttonIndex].justPressed()) {
-          Serial.printf("menu button %u pressed\n", buttonIndex);
-          buttonToModify = &htButtons[buttonToModifyIndex];
-
-          switch(buttonIndex) {
-            case MENU_BACK:
-              currScreenState = STATE_NORMAL;
-              break;
-            case MENU_VAL_SEL:
-              currScreenState = STATE_VAL_SEL;
-              break;
-            case MENU_BUTTON_TEXT_SEL:
-              //currScreenState = STATE_BUTTON_TEXT_SEL;
-              break;
-            case MENU_ALERT_MIN_DOWN: {
-              float increment = pow(10, -buttonToModify->decimalPlaces);
-              buttonToModify->alertMin -= increment;
-              drawMenu();
-              break;
-            }
-            case MENU_ALERT_MIN_UP: {
-              float increment = pow(10, -buttonToModify->decimalPlaces);
-              buttonToModify->alertMin += increment;
-              drawMenu();
-              break;
-            }
-            case MENU_ALERT_MAX_DOWN: {
-              float increment = pow(10, -buttonToModify->decimalPlaces);
-              buttonToModify->alertMax -= increment;
-              drawMenu();
-              break;
-            }
-            case MENU_ALERT_MAX_UP: {
-              float increment = pow(10, -buttonToModify->decimalPlaces);
-              buttonToModify->alertMax += increment;
-              drawMenu();
-              break;
-            }
-            case MENU_ALERT_BEEP_OFF:
-              buttonToModify->alertBeep = false;
-              drawMenu();
-              break;
-            case MENU_ALERT_BEEP_ON:
-              buttonToModify->alertBeep = true;
-              drawMenu();
-              break;
-            case MENU_ALERT_FLASH_OFF:
-              buttonToModify->alertFlash = false;
-              drawMenu();
-              break;
-            case MENU_ALERT_FLASH_ON:
-              buttonToModify->alertFlash = true;
-              drawMenu();
-              break;
-            case MENU_DECIMALS_DOWN:
-              if (buttonToModify->decimalPlaces > 0) {
-                buttonToModify->decimalPlaces -= 1;
-              }
-              drawMenu();
-              Serial.println("decimals down");
-              break;
-            case MENU_DECIMALS_UP:
-              if (buttonToModify->decimalPlaces < 5) { // Reasonable upper limit
-                buttonToModify->decimalPlaces += 1;
-              }
-              drawMenu();
-              Serial.println("decimals up");
-              break;
-            case MENU_UNITS_BACK:
-              buttonToModify->changeUnits(DIRECTION_PREVIOUS);
-              drawMenu();
-              break;
-            case MENU_UNITS_FORWARD:
-              buttonToModify->changeUnits(DIRECTION_NEXT);
-              drawMenu();
-              break;
-            case MENU_BUTTON_MODE_NONE:
-              buttonToModify->mode = BUTTON_MODE_NONE;
-              drawMenu();
-              break;
-            case MENU_BUTTON_MODE_MOMENTARY:
-              buttonToModify->mode = BUTTON_MODE_MOMENTARY;
-              drawMenu();
-              break;
-            case MENU_BUTTON_MODE_TOGGLE:
-              buttonToModify->mode = BUTTON_MODE_TOGGLE;
-              drawMenu();
-              break;
-          }
-        }
-      }
       break;
-
     case STATE_VAL_SEL:
-      if (lastScreenState != currScreenState) {
+      if (justChangedStates) {
         setupSelectValueScreen();
         drawSelectValueScreen();
       }
-      lastScreenState = currScreenState;
-
-      for (uint8_t buttonIndex = 0; buttonIndex < VAL_SEL_NONE; buttonIndex++) {
-        bool wasPressed = valSelButtons[buttonIndex].isPressed();
-        bool buttonContainsTouch = isValidTouch && valSelButtons[buttonIndex].contains(t_x, t_y);
-        
-        // Combine touch detection and button state update
-        valSelButtons[buttonIndex].press(buttonContainsTouch);
-
-        // Only process actions on button state change or just pressed
-        if (valSelButtons[buttonIndex].justPressed()) {
-          Serial.printf("valsel button %u pressed\n", buttonIndex);
-          buttonToModify = &htButtons[buttonToModifyIndex];
-
-          switch (buttonIndex) {
-            case VAL_SEL_BACK:
-              Serial.println("val sel exit");
-              currScreenState = STATE_MENU;
-              break;
-            case VAL_SEL_PAGE_BACK:
-              navigateValSelToPreviousPage();
-              break;
-            case VAL_SEL_PAGE_FORWARD:
-              navigateValSelToNextPage();
-              break;
-            case VAL_SEL_1:
-            case VAL_SEL_2:
-              break;
-          }
-          break;
-        }
-      }
-
       break;
+    case STATE_BUTTON_TEXT_SEL:
+      if (justChangedStates) {
+        // setupSelectButtonTextScreen();
+        // drawSelectButtonTextScreen();
+      }
+      break;
+  }
+
+  // process touch
+  if (!waitingForTouchRelease) {
+    switch (currScreenState) {
+      case STATE_NORMAL:
+        for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
+          bool wasPressed = htButtons[buttonIndex].isPressed();
+          bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
+          
+          // Combine touch detection and button state update
+          htButtons[buttonIndex].press(buttonContainsTouch);
+
+          // Only redraw if button state has changed
+          if (htButtons[buttonIndex].isPressed() != wasPressed) {
+            // Track pressed time for potential long press functionality
+            if (htButtons[buttonIndex].isPressed()) {
+              htButtons[buttonIndex].pressedTime = millis();
+            }
+            // Redraw button with appropriate state
+            htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
+          }
+          // Long press detected
+          if (htButtons[buttonIndex].isPressed() && 
+              (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
+            // Clear the screen
+            tft.fillScreen(TFT_BLACK);
+
+            // change the state
+            currScreenState = STATE_MENU;
+            Serial.println("going to menu");
+
+            // So the menu knows which button/info to modify
+            buttonToModifyIndex = buttonIndex;
+            break;
+          }
+        }
+        break;
+      case STATE_MENU:
+        for (uint8_t buttonIndex = 0; buttonIndex < MENU_NONE; buttonIndex++) {
+          bool wasPressed = menuButtons[buttonIndex].isPressed();
+          bool buttonContainsTouch = isValidTouch && menuButtons[buttonIndex].contains(t_x, t_y);
+          
+          // Combine touch detection and button state update
+          menuButtons[buttonIndex].press(buttonContainsTouch);
+
+          // Only process actions on button state change or just pressed
+          if (menuButtons[buttonIndex].justPressed()) {
+            Serial.printf("menu button %u pressed\n", buttonIndex);
+            buttonToModify = &htButtons[buttonToModifyIndex];
+
+            switch(buttonIndex) {
+              case MENU_BACK:
+                currScreenState = STATE_NORMAL;
+                break;
+              case MENU_VAL_SEL:
+                currScreenState = STATE_VAL_SEL;
+                break;
+              case MENU_BUTTON_TEXT_SEL:
+                //currScreenState = STATE_BUTTON_TEXT_SEL;
+                break;
+              case MENU_ALERT_MIN_DOWN: {
+                float increment = pow(10, -buttonToModify->decimalPlaces);
+                buttonToModify->alertMin -= increment;
+                drawMenu();
+                break;
+              }
+              case MENU_ALERT_MIN_UP: {
+                float increment = pow(10, -buttonToModify->decimalPlaces);
+                buttonToModify->alertMin += increment;
+                drawMenu();
+                break;
+              }
+              case MENU_ALERT_MAX_DOWN: {
+                float increment = pow(10, -buttonToModify->decimalPlaces);
+                buttonToModify->alertMax -= increment;
+                drawMenu();
+                break;
+              }
+              case MENU_ALERT_MAX_UP: {
+                float increment = pow(10, -buttonToModify->decimalPlaces);
+                buttonToModify->alertMax += increment;
+                drawMenu();
+                break;
+              }
+              case MENU_ALERT_BEEP_OFF:
+                buttonToModify->alertBeep = false;
+                drawMenu();
+                break;
+              case MENU_ALERT_BEEP_ON:
+                buttonToModify->alertBeep = true;
+                drawMenu();
+                break;
+              case MENU_ALERT_FLASH_OFF:
+                buttonToModify->alertFlash = false;
+                drawMenu();
+                break;
+              case MENU_ALERT_FLASH_ON:
+                buttonToModify->alertFlash = true;
+                drawMenu();
+                break;
+              case MENU_DECIMALS_DOWN:
+                if (buttonToModify->decimalPlaces > 0) {
+                  buttonToModify->decimalPlaces -= 1;
+                }
+                drawMenu();
+                Serial.println("decimals down");
+                break;
+              case MENU_DECIMALS_UP:
+                if (buttonToModify->decimalPlaces < 5) { // Reasonable upper limit
+                  buttonToModify->decimalPlaces += 1;
+                }
+                drawMenu();
+                Serial.println("decimals up");
+                break;
+              case MENU_UNITS_BACK:
+                buttonToModify->changeUnits(DIRECTION_PREVIOUS);
+                drawMenu();
+                break;
+              case MENU_UNITS_FORWARD:
+                buttonToModify->changeUnits(DIRECTION_NEXT);
+                drawMenu();
+                break;
+              case MENU_BUTTON_MODE_NONE:
+                buttonToModify->mode = BUTTON_MODE_NONE;
+                drawMenu();
+                break;
+              case MENU_BUTTON_MODE_MOMENTARY:
+                buttonToModify->mode = BUTTON_MODE_MOMENTARY;
+                drawMenu();
+                break;
+              case MENU_BUTTON_MODE_TOGGLE:
+                buttonToModify->mode = BUTTON_MODE_TOGGLE;
+                drawMenu();
+                break;
+            }
+          }
+        }
+        break;
+
+      case STATE_VAL_SEL:
+        for (uint8_t buttonIndex = 0; buttonIndex < VAL_SEL_NONE; buttonIndex++) {
+          bool wasPressed = valSelButtons[buttonIndex].isPressed();
+          bool buttonContainsTouch = isValidTouch && valSelButtons[buttonIndex].contains(t_x, t_y);
+          
+          // Combine touch detection and button state update
+          valSelButtons[buttonIndex].press(buttonContainsTouch);
+
+          // Only process actions on button state change or just pressed
+          if (valSelButtons[buttonIndex].justPressed()) {
+            Serial.printf("valsel button %u pressed\n", buttonIndex);
+            buttonToModify = &htButtons[buttonToModifyIndex];
+
+            switch (buttonIndex) {
+              case VAL_SEL_BACK:
+                Serial.println("val sel exit");
+                currScreenState = STATE_MENU;
+                break;
+              case VAL_SEL_PAGE_BACK:
+                navigateValSelToPreviousPage();
+                break;
+              case VAL_SEL_PAGE_FORWARD:
+                navigateValSelToNextPage();
+                break;
+              case VAL_SEL_1:
+              case VAL_SEL_2:
+                break;
+            }
+            break;
+          }
+        }
+
+        break;
+      case STATE_BUTTON_TEXT_SEL:
+        break;
+    }
   }
 
   if (isAButtonBeeping) {
