@@ -54,12 +54,13 @@ void HaltechButton::drawValue() {
   uint16_t fill, text;
 
   bool drawInverted = false;
-  if ((mode == BUTTON_MODE_TOGGLE) && toggledState) {
+  if (toggledState || pressedState) {
     drawInverted = true;
   }
-  if ((mode != BUTTON_MODE_TOGGLE) && pressedState) {
-    drawInverted = true;
+  if (mode == BUTTON_MODE_NONE) {
+    drawInverted = false;
   }
+
   if(drawInverted) {
     fill    = TFT_GREEN;
     text    = _fillcolor;

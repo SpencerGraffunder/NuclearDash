@@ -369,11 +369,11 @@ void screenLoop() {
   static bool waitingForTouchRelease = false;
   bool justChangedStates = false;
   // Handle state transitions and touch release
-  if (justChangedStates) {
+  if (lastScreenState != currScreenState) {
     waitingForTouchRelease = true;  // Set flag on state change
-    lastScreenState = currScreenState;
     justChangedStates = true;
   }
+  lastScreenState = currScreenState;
 
   // If waiting for release and no touch detected, clear the flag
   if (waitingForTouchRelease && !isValidTouch) {
