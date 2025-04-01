@@ -19,7 +19,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeep, bool alertFlash)
 {
   _x1             = x1;
   _y1             = y1;
@@ -34,6 +34,10 @@ void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w
   this->displayUnit = unit;
   this->decimalPlaces = decimalPlaces;
   this->mode = mode;
+  this->alertMin = alertMin;
+  this->alertMax = alertMax;
+  this->alertBeep = alertBeep;
+  this->alertFlash = alertFlash;
 }
 
 // Adjust text datum and x, y deltas

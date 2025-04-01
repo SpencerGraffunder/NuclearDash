@@ -21,14 +21,14 @@ void setup() {
 
   webpageSetup();
 
-  Serial.println("setup");
+  Serial.println("setup done");
 }
 
 void loop(void) {
-  Serial.println("htc");
+  //Serial.printf("htc %lu\n", millis());
   htc.process();
-  Serial.println("webpage");
+  //Serial.printf("webpage %lu\n", millis());
   webpageLoop();
-  Serial.println("screen");
+  //Serial.printf("screen %lu\n", millis());
   screenLoop();
 }

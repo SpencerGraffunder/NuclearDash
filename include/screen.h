@@ -149,6 +149,7 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight);
 
 void setupSelectValueScreen();
 void drawSelectValueScreen();
+void updateButtonConfig(uint8_t buttonToModifyIndex, HaltechButton* buttonToModify);
 void handleValSelValueSelection(int valueIndex);
 void navigateValSelToNextPage();
 void navigateValSelToPreviousPage();

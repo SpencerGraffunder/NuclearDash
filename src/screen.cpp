@@ -10,32 +10,36 @@ char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
 struct ButtonConfiguration {
-    HaltechDisplayType_e displayType;
-    HaltechUnit_e unit;
-    uint8_t decimalPlaces;
-    buttonMode_e mode;
+  HaltechDisplayType_e displayType;
+  HaltechUnit_e displayUnit;
+  uint8_t decimalPlaces;
+  buttonMode_e mode;
+  float alertMin;
+  float alertMax;
+  bool alertBeep;
+  bool alertFlash;
 };
 
 constexpr uint8_t nButtons = 16;
 
 constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
-  // Value                    Unit      Decimals  Mode
-    {HT_MANIFOLD_PRESSURE,    UNIT_PSI,        2, BUTTON_MODE_NONE},
-    {HT_RPM,                  UNIT_RPM,        0, BUTTON_MODE_NONE},
-    {HT_THROTTLE_POSITION,    UNIT_PERCENT,    0, BUTTON_MODE_NONE},
-    {HT_COOLANT_TEMPERATURE,  UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
-    {HT_OIL_PRESSURE,         UNIT_PSI,        1, BUTTON_MODE_NONE},
-    {HT_OIL_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
-    {HT_WIDEBAND_OVERALL,     UNIT_LAMBDA,     2, BUTTON_MODE_NONE},
-    {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE},
-    {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0, BUTTON_MODE_TOGGLE},
-    {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1, BUTTON_MODE_NONE},
-    {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1, BUTTON_MODE_NONE},
-    {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2, BUTTON_MODE_NONE},
-    {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1, BUTTON_MODE_NONE},
-    {HT_VEHICLE_SPEED,        UNIT_MPH,        1, BUTTON_MODE_NONE},
-    {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4, BUTTON_MODE_NONE},
-    {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, BUTTON_MODE_NONE},
+  // Value                  Unit      Decimals  Mode              Alert Min  Alert Max  Beep  Flash
+  {HT_MANIFOLD_PRESSURE,    UNIT_PSI,        2, BUTTON_MODE_NONE, -15, 15, false, false},
+  {HT_RPM,                  UNIT_RPM,        0, BUTTON_MODE_NONE, -1, 8000, false, false},
+  {HT_THROTTLE_POSITION,    UNIT_PERCENT,    0, BUTTON_MODE_NONE, -1, 101, false, false},
+  {HT_COOLANT_TEMPERATURE,  UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE, 0, 230, false, false},
+  {HT_OIL_PRESSURE,         UNIT_PSI,        1, BUTTON_MODE_NONE, -1, 150, false, false},
+  {HT_OIL_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE, -1, 300, false, false},
+  {HT_WIDEBAND_OVERALL,     UNIT_LAMBDA,     2, BUTTON_MODE_NONE, -0.1, 2, false, false},
+  {HT_AIR_TEMPERATURE,      UNIT_FAHRENHEIT, 1, BUTTON_MODE_NONE, -1, 300, false, false},
+  {HT_BOOST_CONTROL_OUTPUT, UNIT_PERCENT,    0, BUTTON_MODE_TOGGLE, -1, 101, false, false},
+  {HT_TARGET_BOOST_LEVEL,   UNIT_PSI,        1, BUTTON_MODE_NONE, -1, 30, false, false},
+  {HT_IGNITION_ANGLE,       UNIT_DEGREES,    1, BUTTON_MODE_NONE, -10, 60, false, false},
+  {HT_BATTERY_VOLTAGE,      UNIT_VOLTS,      2, BUTTON_MODE_NONE, 10, 20, false, false},
+  {HT_INTAKE_CAM_ANGLE_1,   UNIT_DEGREES,    1, BUTTON_MODE_NONE, -1, 50, false, false},
+  {HT_VEHICLE_SPEED,        UNIT_MPH,        1, BUTTON_MODE_NONE, -1, 60, false, false},
+  {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4, BUTTON_MODE_NONE, -1, 1000, false, false},
+  {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, BUTTON_MODE_NONE, -1, 100, false, false},
 };
 
 QueueHandle_t screenQueue;
@@ -165,13 +169,13 @@ void setupMenu() {
   // tft.setFreeFont(LABEL1_FONT);
 
   menuButtons[MENU_BACK].initButtonUL(&tft, 0, currentY,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("Back"), 1);
+                                      BUTTON_WIDTH*1.5, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
+                                      const_cast<char*>("Save/Exit"), 1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   char buttonconfigstr[17];
   sprintf(buttonconfigstr, "Button %u Config", buttonToModifyIndex+1);
-  tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH, currentY + TOP_MARGIN);
+  tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH*1.5, currentY + TOP_MARGIN);
 
   currentY += TEXT_HEIGHT;
 
@@ -472,6 +476,8 @@ void screenLoop() {
 
             switch(buttonIndex) {
               case MENU_BACK:
+                updateButtonConfig(buttonToModifyIndex, buttonToModify);
+                saveLayout();
                 currScreenState = STATE_NORMAL;
                 break;
               case MENU_VAL_SEL:
@@ -616,81 +622,94 @@ void screenLoop() {
 ButtonConfiguration currentButtonConfigs[nButtons];
 
 bool saveLayout() {
-    // Ensure SPIFFS is mounted
-    if (!SPIFFS.begin(true)) {
-        Serial.println("SPIFFS mount failed");
-        return false;
-    }
+  Serial.printf("saving layout\n");
 
-    // Open file for writing
-    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_WRITE);
-    if (!layoutFile) {
-        Serial.println("Failed to open layout file for writing");
-        return false;
-    }
+  // Ensure SPIFFS is mounted
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS mount failed");
+    return false;
+  }
 
-    // Write entire configuration array
-    layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
+  // Open file for writing
+  File layoutFile = SPIFFS.open("/button_layout.bin", FILE_WRITE);
+  if (!layoutFile) {
+    Serial.println("Failed to open layout file for writing");
+    return false;
+  }
 
-    layoutFile.close();
-    return true;
+  // Write entire configuration array
+  layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
+
+  layoutFile.close();
+
+  Serial.println("Layout saved successfully");
+
+  return true;
 }
 
 bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
-    // Ensure SPIFFS is mounted
-    if (!SPIFFS.begin(true)) {
-        Serial.println("SPIFFS mount failed");
-        return false;
-    }
+  // Ensure SPIFFS is mounted
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS mount failed");
+    return false;
+  }
 
-    // Check if layout file exists
-    if (!SPIFFS.exists("/button_layout.bin")) {
-        Serial.println("No saved layout found. Using default.");
-        
-        // Copy default layout
-        for (uint8_t i = 0; i < nButtons; i++) {
-            currentButtonConfigs[i] = {
-                defaultButtonConfigs[i].displayType,
-                defaultButtonConfigs[i].unit,
-                defaultButtonConfigs[i].decimalPlaces,
-                defaultButtonConfigs[i].mode
-            };
-        }
-
-        saveLayout();
-    }
-
-    // Open file for reading
-    File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
-    if (!layoutFile) {
-        Serial.println("Failed to open layout file for reading");
-        return false;
-    }
-
-    // Read entire configuration array
-    layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
-
-    layoutFile.close();
-
-    // Set up buttons with saved configuration
+  // Check if layout file exists
+  if (!SPIFFS.exists("/button_layout.bin")) {
+    Serial.println("No saved layout found. Using default.");
+    
+    // Copy default layout
     for (uint8_t i = 0; i < nButtons; i++) {
-        htButtons[i].initButton(&tft, 
-            i % 4 * buttonWidth, 
-            i / 4 * buttonHeight, 
-            buttonWidth, 
-            buttonHeight, 
-            TFT_GREEN, 
-            TFT_BLACK, 
-            TFT_WHITE, 
-            1, 
-            &dashValues[currentButtonConfigs[i].displayType], 
-            currentButtonConfigs[i].unit,
-            currentButtonConfigs[i].decimalPlaces,
-            currentButtonConfigs[i].mode);
-        htButtons[i].drawButton();
+      currentButtonConfigs[i] = {
+        defaultButtonConfigs[i].displayType,
+        defaultButtonConfigs[i].displayUnit,
+        defaultButtonConfigs[i].decimalPlaces,
+        defaultButtonConfigs[i].mode,
+        defaultButtonConfigs[i].alertMin,
+        defaultButtonConfigs[i].alertMax,
+        defaultButtonConfigs[i].alertBeep,
+        defaultButtonConfigs[i].alertFlash
+      };
     }
 
-    return true;
+    saveLayout();
+  }
+
+  // Open file for reading
+  File layoutFile = SPIFFS.open("/button_layout.bin", FILE_READ);
+  if (!layoutFile) {
+    Serial.println("Failed to open layout file for reading");
+    return false;
+  }
+
+  // Read entire configuration array
+  layoutFile.read(reinterpret_cast<uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
+
+  layoutFile.close();
+
+  // Set up buttons with saved configuration
+  for (uint8_t i = 0; i < nButtons; i++) {
+    htButtons[i].initButton(&tft, 
+        i % 4 * buttonWidth, 
+        i / 4 * buttonHeight, 
+        buttonWidth, 
+        buttonHeight, 
+        TFT_GREEN, 
+        TFT_BLACK, 
+        TFT_WHITE, 
+        1, 
+        &dashValues[currentButtonConfigs[i].displayType], 
+        currentButtonConfigs[i].displayUnit,
+        currentButtonConfigs[i].decimalPlaces,
+        currentButtonConfigs[i].mode,
+        currentButtonConfigs[i].alertMin,
+        currentButtonConfigs[i].alertMax,
+        currentButtonConfigs[i].alertBeep,
+        currentButtonConfigs[i].alertFlash);
+    htButtons[i].drawButton();
+  }
+
+  return true;
 }
 
 int currentPage = 0;
@@ -765,6 +784,19 @@ void drawSelectValueScreen() {
     }
     
     Serial.println("end drawing val sel");
+}
+
+void updateButtonConfig(uint8_t buttonToModifyIndex, HaltechButton* buttonToModify) {
+  Serial.printf("updating button %u\n", buttonToModifyIndex);
+  // Update the button configuration with the selected value
+  currentButtonConfigs[buttonToModifyIndex].displayType = buttonToModify->dashValue->type;
+  currentButtonConfigs[buttonToModifyIndex].displayUnit = buttonToModify->displayUnit;
+  currentButtonConfigs[buttonToModifyIndex].decimalPlaces = buttonToModify->decimalPlaces;
+  currentButtonConfigs[buttonToModifyIndex].mode = buttonToModify->mode;
+  currentButtonConfigs[buttonToModifyIndex].alertMin = buttonToModify->alertMin;
+  currentButtonConfigs[buttonToModifyIndex].alertMax = buttonToModify->alertMax;
+  currentButtonConfigs[buttonToModifyIndex].alertBeep = buttonToModify->alertBeep;
+  currentButtonConfigs[buttonToModifyIndex].alertFlash = buttonToModify->alertFlash;
 }
 
 void handleValSelValueSelection(int valueIndex) {

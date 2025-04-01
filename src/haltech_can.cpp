@@ -184,7 +184,7 @@ bool HaltechCan::begin(long baudRate)
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
     
     // Enable RX data alerts
-    g_config.alerts_enabled = TWAI_ALERT_RX_DATA;
+    g_config.alerts_enabled = TWAI_ALERT_RX_DATA | TWAI_ALERT_RX_QUEUE_FULL;
     g_config.rx_queue_len = 40;
     
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
@@ -246,7 +246,7 @@ void HaltechCan::process()
   twai_message_t message;
 
   // Wait for alert
-  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(1000)) == ESP_OK) {
+  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(10)) == ESP_OK) {
       if (alerts & TWAI_ALERT_RX_DATA) {
           // Message received
           esp_err_t result = twai_receive(&message, 0);
@@ -255,13 +255,13 @@ void HaltechCan::process()
           } else {
               Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
           }
-      }
-      if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
+      } else if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
         Serial.println("RX Queue Full");
+      } else {
+        Serial.printf("Alerts: 0x%x\n", alerts);
       }
-      Serial.printf("Alerts: 0x%x\n", alerts);
   } else {
-    Serial.println("No alerts");
+    Serial.printf("no alerts %lu\n", millis());
   }
 
   // unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
@@ -284,12 +284,14 @@ void HaltechCan::process()
   //                   message.data);
   // }
 
+  //Serial.printf("sending KA %lu\n", millis());
   if (millis() - KAintervalMillis >= KAinterval)
   {
     KAintervalMillis = millis();
     SendKeepAlive();
   }
 
+  //Serial.printf("sending button info %lu\n", millis());
   if (millis() - ButtonInfoIntervalMillis >= ButtonInfoInterval)
   {
     ButtonInfoIntervalMillis = millis();
@@ -299,7 +301,7 @@ void HaltechCan::process()
 
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
-  Serial.printf("Processing ID: %lu\n", rxId);
+  //Serial.printf("Processing ID: %lu\n", rxId);
   for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
   {
     HaltechButton* button = &htButtons[buttonIndex];
