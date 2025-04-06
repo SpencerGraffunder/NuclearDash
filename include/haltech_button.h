@@ -27,7 +27,7 @@ typedef enum {
 
 static const UnitOption unitOptions[] = {
     // Pressure measurements
-    {HT_MANIFOLD_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS}, 2},
+    {HT_MANIFOLD_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS, UNIT_KPA, UNIT_PSI}, 4},
     {HT_COOLANT_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
     {HT_FUEL_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
     {HT_OIL_PRESSURE, {UNIT_KPA, UNIT_PSI}, 2},
@@ -35,8 +35,8 @@ static const UnitOption unitOptions[] = {
     {HT_BRAKE_PRESSURE_FRONT, {UNIT_KPA, UNIT_PSI}, 2},
     {HT_BRAKE_PRESSURE_REAR, {UNIT_KPA, UNIT_PSI}, 2},
     {HT_NOS_PRESSURE_1, {UNIT_KPA, UNIT_PSI}, 2},
-    {HT_BARO_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS}, 2},
-    {HT_EXHAUST_MANIFOLD_PRESS, {UNIT_KPA, UNIT_PSI}, 2},
+    {HT_BARO_PRESSURE, {UNIT_KPA_ABS, UNIT_PSI_ABS, UNIT_KPA, UNIT_PSI}, 4},
+    {HT_EXHAUST_MANIFOLD_PRESS, {UNIT_KPA, UNIT_PSI, UNIT_KPA, UNIT_PSI}, 4},
     
     // Speed measurements
     {HT_VEHICLE_SPEED, {UNIT_KPH, UNIT_MPH}, 2},
@@ -79,9 +79,9 @@ class HaltechButton
 {
 public:
   HaltechButton(void);
-  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeep, bool alertFlash);
+  void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeepEnabled, bool alertFlashEnabled);
   void setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
-  void drawButton(bool inverted = false);
+  void drawButton(bool flashState = false);
   bool contains(int16_t x, int16_t y);
   void press(bool p);
   bool isPressed();
@@ -99,12 +99,11 @@ public:
   uint8_t decimalPlaces = 1;
   float alertMin = -1;
   float alertMax = 1;
-  bool alertState = false;
-  bool alertBeep = false;
-  // beep is global, flash is per-button so we need to track those states here
-  bool alertFlash = false;
-  bool flashState = false;
-  uint64_t lastFlashTime = 0;
+  bool alertConditionMet = false;
+  bool alertBeepEnabled = false;
+  bool alertFlashEnabled = false;
+  bool alertFlashState = false;
+  bool isInverted = false;
   void changeUnits(menuSelectionDirection_e direction);
 
 private:

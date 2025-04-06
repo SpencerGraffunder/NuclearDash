@@ -16,8 +16,8 @@ struct ButtonConfiguration {
   buttonMode_e mode;
   float alertMin;
   float alertMax;
-  bool alertBeep;
-  bool alertFlash;
+  bool alertBeepEnabled;
+  bool alertFlashEnabled;
 };
 
 constexpr uint8_t nButtons = 16;
@@ -41,8 +41,6 @@ constexpr ButtonConfiguration defaultButtonConfigs[nButtons] = {
   {HT_TOTAL_FUEL_USED,      UNIT_GALLONS,    4, BUTTON_MODE_NONE, -1, 1000, false, false},
   {HT_KNOCK_LEVEL_1,        UNIT_DB,         2, BUTTON_MODE_NONE, -1, 100, false, false},
 };
-
-QueueHandle_t screenQueue;
 
 // Invoke the TFT_eSPI button class and create all the button objects
 HaltechButton htButtons[16];
@@ -122,8 +120,8 @@ void touch_calibrate()
 // TFT_HEIGHT and TFT_WIDTH are swapped from what they should be because we're in landscape
 const int BUTTON_WIDTH = TFT_HEIGHT / 5;
 const int LEFT_MARGIN = TFT_HEIGHT / 32;
-const int BUTTON_HEIGHT = TFT_WIDTH / 10;
-const int TEXT_HEIGHT = TFT_WIDTH / 10;  // Height for each line
+const int BUTTON_HEIGHT = TFT_WIDTH / 9;
+const int TEXT_HEIGHT = BUTTON_HEIGHT;  // Height for each line
 const int TOP_MARGIN = LEFT_MARGIN / 2;
 const int TEXT_YOFFSET = BUTTON_HEIGHT * 7 / 32;  // To center text vertically in the line
 
@@ -144,15 +142,10 @@ void screenSetup() {
   delay(20);
   digitalWrite(PIN_BEEP, HIGH);
 
-  uint8_t nCols = 4;
-  uint8_t nRows = 4;
-  uint16_t buttonWidth = TFT_HEIGHT / nCols;
-  uint16_t buttonHeight = TFT_WIDTH / nRows;
+  // uint16_t buttonWidth = TFT_HEIGHT / 4;
+  // uint16_t buttonHeight = TFT_WIDTH / 4;
 
-  loadLayout(tft, buttonWidth, buttonHeight);
-
-  // Create a queue for screen updates
-  screenQueue = xQueueCreate(10, sizeof(HaltechDashValue));
+  loadLayout(tft);
 
   dashValueMutex = xSemaphoreCreateMutex();
 
@@ -206,23 +199,13 @@ void setupMenu() {
   
   currentY += TEXT_HEIGHT;
 
-  tft.drawString("Alert Beep:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
-  menuButtons[MENU_ALERT_BEEP_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
+  tft.drawString("Alert:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
+  menuButtons[MENU_ALERT_BEEP].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("OFF"), 1);
-  menuButtons[MENU_ALERT_BEEP_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
+                                      const_cast<char*>("Beep"), 1);
+  menuButtons[MENU_ALERT_FLASH].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
                                       BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("ON"), 1);
-  
-  currentY += TEXT_HEIGHT;
-
-  tft.drawString("Alert Flash:", LEFT_MARGIN, currentY + TEXT_YOFFSET);
-  menuButtons[MENU_ALERT_FLASH_OFF].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*2.5, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("OFF"), 1);
-  menuButtons[MENU_ALERT_FLASH_ON].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH/2, currentY + BUTTON_HEIGHT/2,
-                                      BUTTON_WIDTH, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("ON"), 1);
+                                      const_cast<char*>("Flash"), 1);
   
   currentY += TEXT_HEIGHT;
 
@@ -326,17 +309,11 @@ void drawMenu() {
         menuButtons[i].drawButton(false, "", buttonToModify->mode == BUTTON_MODE_NONE);
         // Serial.printf("drawing button type none %u\n", buttonToModify->mode == BUTTON_MODE_NONE);
         break;
-      case MENU_ALERT_BEEP_OFF:
-        menuButtons[i].drawButton(false, "", !htButtons[buttonToModifyIndex].alertBeep);
+      case MENU_ALERT_BEEP:
+        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertBeepEnabled);
         break;
-      case MENU_ALERT_BEEP_ON:
-        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertBeep);
-        break;
-      case MENU_ALERT_FLASH_OFF:
-        menuButtons[i].drawButton(false, "", !htButtons[buttonToModifyIndex].alertFlash);
-        break;
-      case MENU_ALERT_FLASH_ON:
-        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertFlash);
+      case MENU_ALERT_FLASH:
+        menuButtons[i].drawButton(false, "", htButtons[buttonToModifyIndex].alertFlashEnabled);
         break;
       default:
         menuButtons[i].drawButton();
@@ -359,11 +336,13 @@ void screenLoop() {
   }
 
   static unsigned long lastDebounceTime = 0;
-  static ScreenState_e lastScreenState;
+  static ScreenState_e lastScreenState = STATE_NONE;
 
   // beep is global so save states here instead of in the button object
   static bool beepState = false;
+  static bool flashState = false;
   static uint64_t lastBeepTime = 0;
+  static uint64_t lastFlashTime = 0;
 
   const unsigned long debounceDelay = 10;
   HaltechButton* buttonToModify;
@@ -398,9 +377,12 @@ void screenLoop() {
 
       for (uint8_t buttonIndex = 0; buttonIndex < nButtons; buttonIndex++) {
         // check if we need to be beeping (when beep is enabled and alerting state)
-        if (htButtons[buttonIndex].alertBeep && htButtons[buttonIndex].alertState) {
+        if (htButtons[buttonIndex].alertBeepEnabled && htButtons[buttonIndex].alertConditionMet) {
           isAButtonBeeping = true;
           Serial.printf("button %d is beeping\n", buttonIndex);
+        }
+        if (htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet && flashState != htButtons[buttonIndex].isInverted) {
+          htButtons[buttonIndex].drawButton(flashState);
         }
       }
       break;
@@ -443,7 +425,7 @@ void screenLoop() {
               htButtons[buttonIndex].pressedTime = millis();
             }
             // Redraw button with appropriate state
-            htButtons[buttonIndex].drawButton(htButtons[buttonIndex].isPressed());
+            htButtons[buttonIndex].drawButton();
           }
           // Long press detected
           if (htButtons[buttonIndex].isPressed() && 
@@ -510,20 +492,12 @@ void screenLoop() {
                 drawMenu();
                 break;
               }
-              case MENU_ALERT_BEEP_OFF:
-                buttonToModify->alertBeep = false;
+              case MENU_ALERT_BEEP:
+                buttonToModify->alertBeepEnabled = !buttonToModify->alertBeepEnabled;
                 drawMenu();
                 break;
-              case MENU_ALERT_BEEP_ON:
-                buttonToModify->alertBeep = true;
-                drawMenu();
-                break;
-              case MENU_ALERT_FLASH_OFF:
-                buttonToModify->alertFlash = false;
-                drawMenu();
-                break;
-              case MENU_ALERT_FLASH_ON:
-                buttonToModify->alertFlash = true;
+              case MENU_ALERT_FLASH:
+                buttonToModify->alertFlashEnabled = !buttonToModify->alertFlashEnabled;
                 drawMenu();
                 break;
               case MENU_DECIMALS_DOWN:
@@ -575,7 +549,7 @@ void screenLoop() {
 
           // Only process actions on button state change or just pressed
           if (valSelButtons[buttonIndex].justPressed()) {
-            Serial.printf("valsel button %u pressed\n", buttonIndex);
+            // Serial.printf("valsel button %u pressed\n", buttonIndex);
             buttonToModify = &htButtons[buttonToModifyIndex];
 
             switch (buttonIndex) {
@@ -589,8 +563,16 @@ void screenLoop() {
               case VAL_SEL_PAGE_FORWARD:
                 navigateValSelToNextPage();
                 break;
-              case VAL_SEL_1:
-              case VAL_SEL_2:
+              default:
+                // Check if the button index is within the valid range
+                if (buttonIndex < VAL_SEL_NONE) {
+                  // Serial.printf("buttonindex %d\n", buttonIndex);
+                  handleValSelValueSelection(buttonIndex);
+                } else {
+                  // Handle invalid button index case
+                  Serial.printf("Invalid button index: %d\n", buttonIndex);
+                }
+
                 break;
             }
             break;
@@ -603,14 +585,21 @@ void screenLoop() {
     }
   }
 
+  if (millis() - lastBeepTime > 100) {
+    //Serial.printf("changing beep state\n");
+    beepState = !beepState;
+    lastBeepTime = millis();
+  }
+
+  if (millis() - lastFlashTime > 200) {
+    Serial.printf("changing flash state\n");
+    flashState = !flashState;
+    lastFlashTime = millis();
+  }
+
   if (isAButtonBeeping) {
     //Serial.printf("button is beeping\n");
     digitalWrite(PIN_BEEP, beepState);
-    if (millis() - lastBeepTime > 100) {
-      Serial.printf("changing beep state\n");
-      beepState = !beepState;
-      lastBeepTime = millis();
-    }
   } else {
     digitalWrite(PIN_BEEP, HIGH);
   }
@@ -647,7 +636,7 @@ bool saveLayout() {
   return true;
 }
 
-bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
+bool loadLayout(TFT_eSPI &tft) {
   // Ensure SPIFFS is mounted
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS mount failed");
@@ -667,8 +656,8 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
         defaultButtonConfigs[i].mode,
         defaultButtonConfigs[i].alertMin,
         defaultButtonConfigs[i].alertMax,
-        defaultButtonConfigs[i].alertBeep,
-        defaultButtonConfigs[i].alertFlash
+        defaultButtonConfigs[i].alertBeepEnabled,
+        defaultButtonConfigs[i].alertFlashEnabled
       };
     }
 
@@ -690,30 +679,30 @@ bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight) {
   // Set up buttons with saved configuration
   for (uint8_t i = 0; i < nButtons; i++) {
     htButtons[i].initButton(&tft, 
-        i % 4 * buttonWidth, 
-        i / 4 * buttonHeight, 
-        buttonWidth, 
-        buttonHeight, 
-        TFT_GREEN, 
-        TFT_BLACK, 
-        TFT_WHITE, 
-        1, 
-        &dashValues[currentButtonConfigs[i].displayType], 
+        i % 4 * TFT_HEIGHT / 4,
+        i / 4 * TFT_WIDTH / 4,
+        TFT_HEIGHT / 4,
+        TFT_WIDTH / 4,
+        TFT_GREEN,
+        TFT_BLACK,
+        TFT_WHITE,
+        1,
+        &dashValues[currentButtonConfigs[i].displayType],
         currentButtonConfigs[i].displayUnit,
         currentButtonConfigs[i].decimalPlaces,
         currentButtonConfigs[i].mode,
         currentButtonConfigs[i].alertMin,
         currentButtonConfigs[i].alertMax,
-        currentButtonConfigs[i].alertBeep,
-        currentButtonConfigs[i].alertFlash);
-    htButtons[i].drawButton();
+        currentButtonConfigs[i].alertBeepEnabled,
+        currentButtonConfigs[i].alertFlashEnabled);
+    //htButtons[i].drawButton();
   }
 
   return true;
 }
 
 int currentPage = 0;
-const int valuesPerPage = 18; // 2 columns * 11 rows
+const int valuesPerPage = 16; // 2 columns * 8 rows
 
 void setupSelectValueScreen() {
     Serial.println("setting up sel val screen");
@@ -734,7 +723,7 @@ void setupSelectValueScreen() {
 
     currentY += TEXT_HEIGHT;
 
-    for (int i = VAL_SEL_1; i <= VAL_SEL_18; i++) {
+    for (int i = VAL_SEL_1; i <= valuesPerPage - 1; i++) {
         Serial.printf("init button %d\n", i);
         int index = currentPage * valuesPerPage + i;
         if (index >= HT_NONE) break; // No more values to display
@@ -773,17 +762,17 @@ void drawSelectValueScreen() {
     currentY += TEXT_HEIGHT;
     int pageOffset = currentPage * valuesPerPage;
 
-    for (int i = VAL_SEL_1; i <= VAL_SEL_18; i++) {
+    for (int i = VAL_SEL_1; i <= valuesPerPage - 1; i++) {
       if (i + pageOffset >= HT_NONE) {
         break;
       }
-      Serial.printf("drawing val sel button %d with name %s from dashval[%d]\n", i, dashValues[i+pageOffset].name, i);
+      // Serial.printf("drawing val sel button %d with name %s from dashval[%d]\n", i, dashValues[i+pageOffset].name, i);
       valSelButtons[i].drawButton(false, dashValues[i+pageOffset].name, false);
       int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
       int y = currentY + (i / 2) * BUTTON_HEIGHT;
     }
     
-    Serial.println("end drawing val sel");
+    // Serial.println("end drawing val sel");
 }
 
 void updateButtonConfig(uint8_t buttonToModifyIndex, HaltechButton* buttonToModify) {
@@ -795,14 +784,34 @@ void updateButtonConfig(uint8_t buttonToModifyIndex, HaltechButton* buttonToModi
   currentButtonConfigs[buttonToModifyIndex].mode = buttonToModify->mode;
   currentButtonConfigs[buttonToModifyIndex].alertMin = buttonToModify->alertMin;
   currentButtonConfigs[buttonToModifyIndex].alertMax = buttonToModify->alertMax;
-  currentButtonConfigs[buttonToModifyIndex].alertBeep = buttonToModify->alertBeep;
-  currentButtonConfigs[buttonToModifyIndex].alertFlash = buttonToModify->alertFlash;
+  currentButtonConfigs[buttonToModifyIndex].alertBeepEnabled = buttonToModify->alertBeepEnabled;
+  currentButtonConfigs[buttonToModifyIndex].alertFlashEnabled = buttonToModify->alertFlashEnabled;
 }
 
 void handleValSelValueSelection(int valueIndex) {
-    Serial.printf("handling value select %u %d\n", buttonToModifyIndex, valueIndex);
+    // Calculate the actual index in the dashValues array based on the current page
+    int actualIndex = currentPage * valuesPerPage + valueIndex;
+
+    // Ensure the index is within bounds
+    if (actualIndex >= HT_NONE) {
+        Serial.printf("Invalid value index: %d (actual index: %d)\n", valueIndex, actualIndex);
+        return;
+    }
+
+    Serial.printf("handling value select for button %u with value index %d (actual index: %d)\n", buttonToModifyIndex, valueIndex, actualIndex);
+
     // Update the button configuration with the selected value
-    currentButtonConfigs[buttonToModifyIndex].displayType = static_cast<HaltechDisplayType_e>(valueIndex);
+    currentButtonConfigs[buttonToModifyIndex].displayType = static_cast<HaltechDisplayType_e>(actualIndex);
+
+    // Update the button's dashValue to the selected value
+    htButtons[buttonToModifyIndex].dashValue = &dashValues[actualIndex];
+
+    // Change units on the button to get a valid unit
+    htButtons[buttonToModifyIndex].changeUnits(DIRECTION_NEXT);
+
+    // Save and reload the layout
+    saveLayout();
+    loadLayout(tft);
 
     // Return to the menu screen
     currScreenState = STATE_MENU;
@@ -811,6 +820,7 @@ void handleValSelValueSelection(int valueIndex) {
 void navigateValSelToNextPage() {
     if ((currentPage + 1) * valuesPerPage < HT_NONE) {
         currentPage++;
+        printf("advancing to page %d\n", currentPage);
         drawSelectValueScreen();
     }
 }
@@ -818,6 +828,7 @@ void navigateValSelToNextPage() {
 void navigateValSelToPreviousPage() {
     if (currentPage > 0) {
         currentPage--;
+        printf("returning to page %d\n", currentPage);
         drawSelectValueScreen();
     }
 }

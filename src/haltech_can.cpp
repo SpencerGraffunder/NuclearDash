@@ -176,7 +176,7 @@ HaltechCan::HaltechCan()
 
 bool HaltechCan::begin(long baudRate)
 {
-    delay(1000);
+    //delay(1000);
 
     // First, uninstall any existing driver
     twai_driver_uninstall();
@@ -246,7 +246,7 @@ void HaltechCan::process()
   twai_message_t message;
 
   // Wait for alert
-  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(10)) == ESP_OK) {
+  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(100)) == ESP_OK) {
       if (alerts & TWAI_ALERT_RX_DATA) {
           // Message received
           esp_err_t result = twai_receive(&message, 0);

@@ -75,8 +75,6 @@ extern uint16_t keyColor[15];
 // Invoke the TFT_eSPI button class and create all the button objects
 extern HaltechButton htButtons[16];
 
-extern QueueHandle_t screenQueue;
-
 extern const uint8_t nButtons;
 extern HaltechDisplayType_e buttonDisplayTypes[];
 
@@ -85,6 +83,7 @@ typedef enum {
   STATE_MENU,
   STATE_VAL_SEL,
   STATE_BUTTON_TEXT_SEL,
+  STATE_NONE,
 } ScreenState_e;
 
 typedef enum {
@@ -94,10 +93,8 @@ typedef enum {
   MENU_ALERT_MIN_UP,
   MENU_ALERT_MAX_DOWN,
   MENU_ALERT_MAX_UP,
-  MENU_ALERT_BEEP_OFF,
-  MENU_ALERT_BEEP_ON,
-  MENU_ALERT_FLASH_OFF,
-  MENU_ALERT_FLASH_ON,
+  MENU_ALERT_BEEP,
+  MENU_ALERT_FLASH,
   MENU_DECIMALS_DOWN,
   MENU_DECIMALS_UP,
   MENU_UNITS_BACK,
@@ -126,8 +123,6 @@ typedef enum {
   VAL_SEL_14,
   VAL_SEL_15,
   VAL_SEL_16,
-  VAL_SEL_17,
-  VAL_SEL_18,
   VAL_SEL_BACK,
   VAL_SEL_PAGE_BACK,
   VAL_SEL_PAGE_FORWARD,
@@ -145,7 +140,7 @@ void screenLoop();
 void touch_calibrate();
 void drawMenu();
 bool saveLayout();
-bool loadLayout(TFT_eSPI &tft, int buttonWidth, int buttonHeight);
+bool loadLayout(TFT_eSPI &tft);
 
 void setupSelectValueScreen();
 void drawSelectValueScreen();

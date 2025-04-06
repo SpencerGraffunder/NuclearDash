@@ -19,7 +19,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeep, bool alertFlash)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeepEnabled, bool alertFlashEnabled)
 {
   _x1             = x1;
   _y1             = y1;
@@ -36,8 +36,8 @@ void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w
   this->mode = mode;
   this->alertMin = alertMin;
   this->alertMax = alertMax;
-  this->alertBeep = alertBeep;
-  this->alertFlash = alertFlash;
+  this->alertBeepEnabled = alertBeepEnabled;
+  this->alertFlashEnabled = alertFlashEnabled;
 }
 
 // Adjust text datum and x, y deltas
@@ -65,6 +65,10 @@ void HaltechButton::drawValue() {
     drawInverted = false;
   }
 
+  if (isInverted) {
+    drawInverted = !drawInverted;
+  }
+
   if(drawInverted) {
     fill    = TFT_GREEN;
     text    = _fillcolor;
@@ -81,7 +85,7 @@ void HaltechButton::drawValue() {
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
   // update the overall alert state
-  alertState = (convertedValue > alertMax || convertedValue < alertMin);
+  alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin);
 
   // Set text datum to middle center for perfect centering
   _gfx->setTextDatum(MC_DATUM);
@@ -99,7 +103,9 @@ void HaltechButton::drawBar() {
   
 }
 
-void HaltechButton::drawButton(bool inverted) {
+void HaltechButton::drawButton(bool flashState) {
+  Serial.printf("drawing button flash %d\n", flashState);
+  isInverted = flashState;
   uint16_t fill, outline, text;
 
   tft.setFreeFont(LABEL2_FONT);
@@ -114,6 +120,11 @@ void HaltechButton::drawButton(bool inverted) {
   if (mode == BUTTON_MODE_NONE) {
     drawInverted = false;
   }
+
+  if (flashState) {
+    drawInverted = !drawInverted;
+  }
+
   if(drawInverted) {
     fill    = TFT_GREEN;
     outline = _outlinecolor;
@@ -182,20 +193,44 @@ void HaltechButton::changeUnits(menuSelectionDirection_e direction) {
   for (const UnitOption& option : unitOptions) {
     if (option.type == this->dashValue->type) {
       Serial.printf("found matching type %d\n", option.type);
+      bool validUnitFound = false;
+
       for (uint8_t i = 0; i < option.count; i++) {
         if (option.units[i] == this->displayUnit) {
+          validUnitFound = true;
           Serial.printf("found matching unit index %d\n", i);
           if (direction == DIRECTION_NEXT) {
             nextUnitIndex = (i + 1) % option.count; // loop around
           } else if (direction == DIRECTION_PREVIOUS) {
             nextUnitIndex = (i - 1 + option.count) % option.count; // add option count to make sure it doesn't go negative
           }
-          Serial.printf("changing to unit %d", nextUnitIndex);
+          Serial.printf("changing to unit %d\n", nextUnitIndex);
           this->displayUnit = option.units[nextUnitIndex];
           drawMenu();
           return;
         }
       }
+
+      // Fallback: if no valid unit is found, set to the first unit in the list
+      if (!validUnitFound) {
+        Serial.printf("current unit is invalid, defaulting to first unit\n");
+        this->displayUnit = option.units[0];
+        drawMenu();
+        return;
+      }
+    }
+  }
+
+  // Fallback: if no UnitOption exists for the current dashValue, use its default unit
+  Serial.printf("no UnitOption found for type %d, searching dashValues for default unit\n", this->dashValue->type);
+
+  // Search through dashValues for a matching type
+  for (uint8_t i = 0; i < HT_NONE; i++) {
+    if (dashValues[i].type == this->dashValue->type) {
+      Serial.printf("found matching dashValue type %d, defaulting to unit %d\n", dashValues[i].type, dashValues[i].incomingUnit);
+      this->displayUnit = dashValues[i].incomingUnit;
+      drawMenu();
+      return;
     }
   }
 }
