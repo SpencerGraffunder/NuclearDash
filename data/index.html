@@ -38,6 +38,22 @@
             color: #666;
             font-size: 0.8em;
         }
+        .update-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .update-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -53,6 +69,8 @@
             <div class="grid-item-unit">RPM</div>
         </div>
     </div>
+
+    <a href="/ota" class="update-button">Update</a>
 
     <script>
         // JavaScript to update the grid dynamically using SSE

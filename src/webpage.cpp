@@ -52,38 +52,57 @@ void handleOTAPage() {
   server.send(200, "text/html", otaHtml);
 }
 
+// Add this new endpoint
+void handleUploadStatus() {
+  String status = "";
+  if (updateInProgress) {
+    float progress = (updateWritten * 100.0) / updateSize;
+    status = "Upload in progress: " + String(progress, 1) + "%";
+  } else {
+    status = "No upload in progress";
+  }
+  server.send(200, "text/plain", status);
+}
+
 void handleUpdateUpload() {
   HTTPUpload& upload = server.upload();
-  
-  if (upload.status == UPLOAD_FILE_START) {
-    updateInProgress = true;
-    updateSize = upload.totalSize;
-    updateWritten = 0;
-    
-    // Note: This uses the Update library to handle OTA updates
-    if (!Update.begin(updateSize)) {
-      Update.printError(Serial);
+
+  if (upload.status == UPLOAD_FILE_START) {      
+      Serial.printf("Starting OTA update. File size: %u bytes\n", upload.totalSize);
+      updateInProgress = true;
+      updateSize = upload.totalSize;
+      updateWritten = 0;
+
+      if (!Update.begin()) {
+          Serial.println("Update.begin() failed!");
+          Update.printError(Serial);
+          updateInProgress = false;
+      } else {
+          Serial.println("Update.begin() succeeded.");
+      }
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+      Serial.printf("Writing %u bytes...\n", upload.currentSize);
+      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          Update.printError(Serial);
+          updateInProgress = false;
+      }
+      updateWritten += upload.currentSize;
+  } else if (upload.status == UPLOAD_FILE_END) {
+      Serial.printf("Upload complete. Total written: %u bytes\n", updateWritten);
+      if (Update.end(true)) {
+          Serial.println("Update successful! Rebooting...");
+          server.send(200, "text/plain", "Update Successful! Rebooting...");
+          delay(1000);
+          ESP.restart();
+      } else {
+          Update.printError(Serial);
+          server.send(500, "text/plain", "Update Failed");
+          updateInProgress = false;
+      }
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+      Serial.println("Upload aborted.");
+      Update.end();
       updateInProgress = false;
-    }
-  } 
-  else if (upload.status == UPLOAD_FILE_WRITE) {
-    if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-      Update.printError(Serial);
-      updateInProgress = false;
-    }
-    updateWritten += upload.currentSize;
-  } 
-  else if (upload.status == UPLOAD_FILE_END) {
-    if (Update.end(true)) {
-      // Successful update
-      server.send(200, "text/plain", "Update Successful! Rebooting...");
-      delay(1000);
-      ESP.restart();
-    } else {
-      Update.printError(Serial);
-      server.send(500, "text/plain", "Update Failed");
-      updateInProgress = false;
-    }
   }
 }
 
@@ -169,6 +188,7 @@ void createAccessPoint() {
   server.on("/", handleRoot);
   server.on("/ota", handleOTAPage);
   server.on("/events", HTTP_GET, handleSSE);
+  server.on("/uploadStatus", HTTP_GET, handleUploadStatus);
   server.on("/update", HTTP_POST, [](){
     // Dummy handler for POST request
   }, handleUpdateUpload);
@@ -197,7 +217,7 @@ void webpageSetup() {
     delay(200);
     Serial.print(".");
     
-    // If connection fails after 10 seconds, create access point
+    // If connection fails create access point
     if (millis() - startAttemptTime > 3000) {
       createAccessPoint();
       return;
@@ -217,6 +237,7 @@ void webpageSetup() {
   server.on("/", handleRoot);
   server.on("/ota", handleOTAPage);
   server.on("/events", HTTP_GET, handleSSE);
+  server.on("/uploadStatus", HTTP_GET, handleUploadStatus);
   server.on("/update", HTTP_POST, [](){
     // Dummy handler for POST request
   }, handleUpdateUpload);

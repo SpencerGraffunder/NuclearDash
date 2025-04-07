@@ -104,7 +104,7 @@ void HaltechButton::drawBar() {
 }
 
 void HaltechButton::drawButton(bool flashState) {
-  Serial.printf("drawing button flash %d\n", flashState);
+  // Serial.printf("drawing button flash %d\n", flashState);
   isInverted = flashState;
   uint16_t fill, outline, text;
 

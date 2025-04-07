@@ -18,18 +18,49 @@
         document.querySelector('form').addEventListener('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
+            var fileInput = document.querySelector('input[type="file"]');
             
-            fetch('/update', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(result => {
-                document.getElementById('status').textContent = result;
-            })
-            .catch(error => {
-                document.getElementById('status').textContent = 'Update failed: ' + error;
-            });
+            // Show immediate feedback
+            document.getElementById('status').textContent = 'Starting upload...';
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update', true);
+            
+            // Track upload progress locally
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    document.getElementById('status').textContent = 'Uploading: ' + 
+                        percentComplete.toFixed(2) + '%';
+                }
+            };
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    document.getElementById('status').textContent = xhr.responseText;
+                    // Stop polling once complete
+                    clearInterval(statusInterval);
+                } else {
+                    document.getElementById('status').textContent = 'Error: ' + xhr.status;
+                    clearInterval(statusInterval);
+                }
+            };
+            
+            xhr.send(formData);
+            
+            // Poll for server-side status
+            var statusInterval = setInterval(function() {
+                fetch('/uploadStatus')
+                    .then(response => response.text())
+                    .then(status => {
+                        if (status.includes("No upload in progress")) {
+                            // Don't overwrite progress messages if no upload is happening
+                            return;
+                        }
+                        document.getElementById('status').textContent = status;
+                    })
+                    .catch(err => console.error('Status update failed:', err));
+            }, 1000);
         });
     </script>
 </body>

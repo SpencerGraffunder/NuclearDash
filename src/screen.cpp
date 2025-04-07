@@ -586,13 +586,13 @@ void screenLoop() {
   }
 
   if (millis() - lastBeepTime > 100) {
-    //Serial.printf("changing beep state\n");
+    // Serial.printf("changing beep state\n");
     beepState = !beepState;
     lastBeepTime = millis();
   }
 
   if (millis() - lastFlashTime > 200) {
-    Serial.printf("changing flash state\n");
+    // Serial.printf("changing flash state\n");
     flashState = !flashState;
     lastFlashTime = millis();
   }
