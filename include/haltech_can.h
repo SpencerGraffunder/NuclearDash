@@ -344,7 +344,7 @@ class HaltechCan
 public:
     HaltechCan();
     bool begin(long baudRate = 1000E3);
-    void process();
+    void process(const unsigned long preemptLimit = 50);
 
 private:
     unsigned long lastProcessTime;

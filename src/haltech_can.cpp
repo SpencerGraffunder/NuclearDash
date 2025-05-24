@@ -185,7 +185,7 @@ bool HaltechCan::begin(long baudRate)
     
     // Enable RX data alerts
     g_config.alerts_enabled = TWAI_ALERT_RX_DATA | TWAI_ALERT_RX_QUEUE_FULL;
-    g_config.rx_queue_len = 40;
+    g_config.rx_queue_len = 100;
     
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
@@ -240,7 +240,7 @@ uint32_t HaltechCan::extractValue(const uint8_t *buffer, uint8_t start_byte, uin
     return result;
 }
 
-void HaltechCan::process()
+void HaltechCan::process(const unsigned long preemptLimit)
 {
   uint32_t alerts;
   twai_message_t message;
@@ -249,23 +249,36 @@ void HaltechCan::process()
   if (twai_read_alerts(&alerts, pdMS_TO_TICKS(10)) == ESP_OK) {
       if (alerts & TWAI_ALERT_RX_DATA) {
           // Message received
-          esp_err_t result = twai_receive(&message, 0);
-          if (result == ESP_OK) {
+          static unsigned long lastPreemptTime = 0;
+          while (1) {
+            if (millis() - lastPreemptTime > preemptLimit) {
+              // Serial.printf("preempting\n");
+              lastPreemptTime = millis();
+              break;
+            }
+            esp_err_t result = twai_receive(&message, 1);
+            if (result == ESP_OK) {
               processCANData(message.identifier, message.data_length_code, message.data);
-          } else {
-              Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
+            } else {
+              Serial.printf("Error receiving message or no message in queue: %s\n", esp_err_to_name(result));
+              break;
+            }
           }
-      } else if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
+          alerts &= !TWAI_ALERT_RX_DATA;
+      }
+      if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
         Serial.println("RX Queue Full");
-      } else {
-        Serial.printf("Alerts: 0x%x\n", alerts);
+        twai_clear_receive_queue();
+        alerts &= !TWAI_ALERT_RX_QUEUE_FULL;
+      }
+      if (alerts) {
+        Serial.printf("Alerts: 0x%04x\n", alerts);
       }
   } else {
     Serial.printf("no alerts %lu\n", millis());
   }
 
-  // unsigned long preemptLimit = 50; // break out of loop if this long has passed since we exited last
-  // static unsigned long lastPreemptTime = 0;
+  
   // while (true) { // escape with breaks or when it's gone for too long
   //   twai_message_t message;
   //   esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
@@ -301,7 +314,7 @@ void HaltechCan::process()
 
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
-  //Serial.printf("Processing ID: %lu\n", rxId);
+  //Serial.printf("Processing ID: %04x\n", rxId);
   for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
   {
     HaltechButton* button = &htButtons[buttonIndex];
