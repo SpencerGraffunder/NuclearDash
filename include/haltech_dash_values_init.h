@@ -1,5 +1,5 @@
 HaltechDashValue dashValues[] = {
-    // Long Name,                    Short Name,   Enum,                      CAN ID, Start B, End B, Incoming Unit,  Scale,  Offset,  Rate, Signed, Last, Scaled, Bit
+    // Long Name,            Short Name,   Enum,                      CAN ID, Start B, End B, Incoming Unit,  Scale,  Offset,  Rate, Signed, Last, Scaled, Bit
     {"RPM",                  "RPM",        HT_RPM,                    0x360,  0,       1,     UNIT_RPM,       1.0f,   0.0f,    20,   false,  0,    0.0f,   0},
     {"Manifold Pressure",    "MAP",        HT_MANIFOLD_PRESSURE,      0x360,  2,       3,     UNIT_KPA_ABS,   0.1f,   0.0f,    20,   false,  0,    0.0f,   0},
     {"Throttle Position",    "TPS",        HT_THROTTLE_POSITION,      0x360,  4,       5,     UNIT_PERCENT,   0.1f,   0.0f,    20,   false,  0,    0.0f,   0},

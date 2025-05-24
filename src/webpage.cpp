@@ -166,7 +166,7 @@ void updateWebpageValue(int index, float value, int precision) {
 }
 
 void createAccessPoint() {
-  Serial.println("\nFailed to connect to WiFi. Creating Access Point.");
+  Serial.println("Creating Access Point.");
   
   // Stop any previous WiFi connections
   WiFi.disconnect(true);
@@ -217,8 +217,9 @@ void webpageSetup() {
     delay(200);
     Serial.print(".");
     
-    // If connection fails create access point
-    if (millis() - startAttemptTime > 3000) {
+    // If connection fails after 1 seconds, create access point
+    if (millis() - startAttemptTime > 1000) {
+      Serial.printf("\nFailed to connect to WiFi. ");
       createAccessPoint();
       return;
     }
