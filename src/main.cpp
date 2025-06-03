@@ -11,14 +11,18 @@ HaltechCan htc;
 void setup() {
   // Use serial port
   Serial.begin(115200);
+  delay(2000);
+  Serial.printf("starting setup\n");
 
   screenSetup();
+  Serial.printf("screen setup done\n");
 
   while (!htc.begin(1000E3)) {
     Serial.println("Haltech CAN init failed");
     delay(500);
   }
 
+  Serial.printf("webpage setup\n");
   webpageSetup();
 
   Serial.println("setup done");
