@@ -121,7 +121,7 @@ void HaltechButton::drawButton(bool flashState) {
     drawInverted = false;
   }
 
-  if (flashState) {
+  if (flashState && alertConditionMet) {
     drawInverted = !drawInverted;
   }
 
