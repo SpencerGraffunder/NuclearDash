@@ -126,39 +126,27 @@ const int TOP_MARGIN = LEFT_MARGIN / 2;
 const int TEXT_YOFFSET = BUTTON_HEIGHT * 7 / 32;  // To center text vertically in the line
 
 void screenSetup() {
-  Serial.println("screenSetup: tft.init()");
   tft.init();
 
-  Serial.println("screenSetup: tft.setRotation(1)");
   tft.setRotation(1);
 
-  Serial.println("screenSetup: touch_calibrate()");
   touch_calibrate();
 
-  Serial.println("screenSetup: tft.fillScreen(TFT_BLACK)");
   tft.fillScreen(TFT_BLACK);
 
-  Serial.println("screenSetup: pinMode(PIN_BEEP, OUTPUT)");
   pinMode(PIN_BEEP, OUTPUT);
 
-  Serial.println("screenSetup: delay(20)");
   delay(20);
 
-  Serial.println("screenSetup: digitalWrite(PIN_BEEP, HIGH)");
   digitalWrite(PIN_BEEP, HIGH);
 
-  // Serial.println("screenSetup: buttonWidth and buttonHeight commented out");
 
-  Serial.println("screenSetup: loadLayout(tft)");
   loadLayout(tft);
 
-  Serial.println("screenSetup: dashValueMutex = xSemaphoreCreateMutex()");
   dashValueMutex = xSemaphoreCreateMutex();
 
-  Serial.println("screenSetup: tft.setFreeFont(LABEL2_FONT)");
   tft.setFreeFont(LABEL2_FONT);
-
-  Serial.println("screenSetup: done");
+  
 }
 
 void setupMenu() {

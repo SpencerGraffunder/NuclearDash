@@ -181,8 +181,8 @@ bool HaltechCan::begin(long baudRate)
     // First, uninstall any existing driver
     twai_driver_uninstall();
     
-    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_33, GPIO_NUM_13, TWAI_MODE_NORMAL);
-    
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX_PIN, CAN_RX_PIN, TWAI_MODE_NORMAL);
+
     // Enable RX data alerts
     g_config.alerts_enabled = TWAI_ALERT_RX_DATA | TWAI_ALERT_RX_QUEUE_FULL;
     g_config.rx_queue_len = 100;
@@ -246,7 +246,7 @@ void HaltechCan::process(const unsigned long preemptLimit)
   twai_message_t message;
 
   // Wait for alert
-  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(100)) == ESP_OK) {
+  if (twai_read_alerts(&alerts, pdMS_TO_TICKS(10)) == ESP_OK) {
       if (alerts & TWAI_ALERT_RX_DATA) {
           // Message received
           static unsigned long lastPreemptTime = 0;
