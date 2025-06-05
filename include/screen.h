@@ -59,23 +59,18 @@ extern TFT_eSPI tft; // Invoke custom library
 #define DISP_TSIZE 3
 #define DISP_TCOLOR TFT_CYAN
 
-// Number length, buffer for storing it and character index
-#define NUM_LEN 12
-extern char numberBuffer[NUM_LEN + 1];
-extern uint8_t numberIndex;
-
 // We have a status line for messages
 #define STATUS_X 120 // Centred on this
 #define STATUS_Y 65
+
+#define N_BUTTONS 16
 
 // Create 15 keys for the keypad
 extern char keyLabel[15][5];
 extern uint16_t keyColor[15];
 
 // Invoke the TFT_eSPI button class and create all the button objects
-extern HaltechButton htButtons[16];
-
-extern const uint8_t nButtons;
+extern HaltechButton htButtons[N_BUTTONS];
 extern HaltechDisplayType_e buttonDisplayTypes[];
 
 typedef enum {

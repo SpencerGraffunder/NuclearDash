@@ -1,3 +1,4 @@
+#include "config.h"
 #include <Arduino.h>
 #include "haltech_can.h"
 #include "FS.h"

@@ -6,6 +6,7 @@
 #include "webpage.h"
 #include <unordered_map>
 #include "esp_intr_alloc.h"
+#include "config.h"
 
 const char* unitDisplayStrings[] = {
     "RPM",       // UNIT_RPM
@@ -116,8 +117,11 @@ float HaltechDashValue::convertToUnit(HaltechUnit_e toUnit)
     break;
 
   case UNIT_RPM:
+    break;
   case UNIT_PERCENT:
+    break;
   case UNIT_DEGREES:
+    break;
   case UNIT_MS:
     if (toUnit == UNIT_SECONDS) {
         return this->scaled_value / 1000.0; // Convert milliseconds to seconds
@@ -315,7 +319,7 @@ void HaltechCan::process(const unsigned long preemptLimit)
 void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsigned char *rxBuf)
 {
   //Serial.printf("Processing ID: %04x\n", rxId);
-  for (int buttonIndex = 0; buttonIndex < nButtons; buttonIndex++)
+  for (int buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++)
   {
     HaltechButton* button = &htButtons[buttonIndex];
     HaltechDashValue* dashValue = button->dashValue;
@@ -399,7 +403,7 @@ void HaltechCan::SendButtonInfo()
   for (int j = 0; j < 2; j++)
   {
     static uint8_t prevButtonInfo[2] = {0}; // Local static array to store previous values
-    for (int i = 0; i < nButtons / 2; i++)
+    for (int i = 0; i < N_BUTTONS / 2; i++)
     {
       bool buttonStatus = false;
       if (htButtons[i + j * 8].mode == BUTTON_MODE_TOGGLE) {
