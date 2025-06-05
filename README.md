@@ -8,14 +8,12 @@ This project implements a custom dash display and keypad interface for Haltech E
 - Touchscreen interface for ECU controls
 - Custom PCB design for compact integration
 - CAN bus communication with Haltech ECU
-- Configurable display layouts and themes
 
 ## Hardware Requirements
 
-- ESP32 development board
+- ESP32 development board (ESP32 DEVKIT or ESP32-S3-Zero)
 - ILI9488 touchscreen display
-- Custom PCB
-- CAN bus transceiver (e.g., MCP2515)
+- Custom PCB with CAN Transciever
 
 ## Software Dependencies
 
@@ -24,7 +22,7 @@ This project is built using PlatformIO. The following libraries are required:
 - TFT_eSPI
 - sandeepmistry/CAN
 
-You can install these libraries through the PlatformIO Library Manager.
+You can install these libraries through the PlatformIO Library Manager, or they should be installed automatically on build.
 
 ## Setup and Configuration
 
@@ -37,7 +35,8 @@ To build and flash the project to your ESP32:
 
 1. Connect your ESP32 to your computer
 2. In PlatformIO, click on the "Build" button to compile the project
-3. Click on the "Upload" button to flash the firmware to your ESP32
+3. There will be errors about the defines, so find the User_Setup_Select.h file and comment out the `#include <User_Setup.h>` line
+4. Click on the "Upload" button to flash the firmware to your ESP32
 
 ## Usage
 
