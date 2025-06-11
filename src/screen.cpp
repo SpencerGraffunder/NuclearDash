@@ -601,6 +601,16 @@ bool saveLayout() {
     return false;
   }
 
+  // Save config version
+  uint8_t configVersion = CONFIG_VERSION; // Increment this if your config structure changes
+  File configFile = SPIFFS.open("/config_info.bin", FILE_WRITE);
+  if (!configFile) {
+    Serial.println("Failed to open config info file for writing");
+    return false;
+  }
+  configFile.write(&configVersion, sizeof(configVersion));
+  configFile.close();
+
   // Open file for writing
   File layoutFile = SPIFFS.open("/button_layout.bin", FILE_WRITE);
   if (!layoutFile) {
@@ -610,7 +620,6 @@ bool saveLayout() {
 
   // Write entire configuration array
   layoutFile.write(reinterpret_cast<const uint8_t*>(currentButtonConfigs), sizeof(currentButtonConfigs));
-
   layoutFile.close();
 
   Serial.println("Layout saved successfully");
@@ -625,8 +634,23 @@ bool loadLayout(TFT_eSPI &tft) {
     return false;
   }
 
+  // Read config version
+  uint8_t savedConfigVersion = 0;
+  if (SPIFFS.exists("/config_info.bin")) {
+    File configFile = SPIFFS.open("/config_info.bin", FILE_READ);
+    if (configFile) {
+      configFile.read(&savedConfigVersion, sizeof(savedConfigVersion));
+      configFile.close();
+      Serial.printf("Loaded config version: %u\n", savedConfigVersion);
+    } else {
+      Serial.println("Failed to open config info file for reading");
+    }
+  } else {
+    Serial.println("No config info file found, using default version 0");
+  }
+
   // Check if layout file exists
-  if (!SPIFFS.exists("/button_layout.bin")) {
+  if (!SPIFFS.exists("/button_layout.bin") || savedConfigVersion != CONFIG_VERSION) {
     Serial.println("No saved layout found. Using default.");
     
     // Copy default layout
