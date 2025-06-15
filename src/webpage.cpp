@@ -14,7 +14,7 @@ const char* password = "heckifiknow";
 const char* hostname = "NuclearDash";
 const char* selfssid = "NuclearDash";
 const char* selfpassword = "nucleard";
-const char* versionUrl = "https://nuclearquads.github.io/dash/version.json";
+const char* versionUrl = "https://raw.githubusercontent.com/SpencerGraffunder/NuclearDash/refs/heads/master/version.json";
 
 // Webserver setup
 WebServer server(80);
