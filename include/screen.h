@@ -136,6 +136,7 @@ void touch_calibrate();
 void drawMenu();
 bool saveLayout();
 bool loadLayout(TFT_eSPI &tft);
+bool showUpdateScreen(uint32_t remoteVersion, uint32_t currentVersion);
 
 void setupSelectValueScreen();
 void drawSelectValueScreen();

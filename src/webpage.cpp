@@ -2,6 +2,9 @@
 #include <SPIFFS.h>
 #include <vector>
 #include <ESPmDNS.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include "screen.h"
 
 std::vector<WiFiClient> sseClients;
 
@@ -11,6 +14,7 @@ const char* password = "heckifiknow";
 const char* hostname = "NuclearDash";
 const char* selfssid = "NuclearDash";
 const char* selfpassword = "nucleard";
+const char* versionUrl = "https://nuclearquads.github.io/dash/version.json";
 
 // Webserver setup
 WebServer server(80);
@@ -247,6 +251,154 @@ void webpageSetup() {
   server.begin();
 
   setupOTA();
+
+  if (checkForUpdate()) {
+    Serial.println("Update available, starting OTA...");
+    delay(1000);
+    performOTAUpdate();
+  } else {
+    Serial.println("No update available or check failed.");
+  }
+}
+
+String downloadURL = "https://nuclearquads.github.io/dash/firmware.bin";
+
+uint32_t getRemoteVersion() {
+  HTTPClient http;
+  http.begin(versionUrl);
+  http.addHeader("User-Agent", "ESP32-OTA-Client");
+  
+  int httpCode = http.GET();
+  uint32_t version = -1;
+  
+  if (httpCode == HTTP_CODE_OK) {
+    String payload = http.getString();
+    
+    // Parse JSON response
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    
+    if (!error) {
+      version = doc["latest_version"].as<uint32_t>();
+      downloadURL = doc["download_url"].as<String>();
+    } else {
+      Serial.printf("JSON parsing failed: %s\n", error.c_str());
+    }
+  } else {
+    Serial.printf("HTTP GET failed: %d\n", httpCode);
+  }
+  
+  http.end();
+  return version;
+}
+
+bool checkForUpdate() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected");
+    return false;
+  }
+  
+  uint32_t remoteVersion = getRemoteVersion();
+  if (remoteVersion == 0) {
+    Serial.println("Failed to get remote version or version is 0");
+    return false;
+  }
+  
+  Serial.printf("Remote version: %u\n", remoteVersion);
+  Serial.printf("Current version: %u\n", CURRENT_VERSION);
+  
+  // Only update if remote version is GREATER than current version
+  bool updateNeeded = remoteVersion > CURRENT_VERSION;
+  Serial.printf("Update needed: %s\n", updateNeeded ? "YES" : "NO");
+
+  bool doUpdate = false;
+  if (updateNeeded) {
+    if (showUpdateScreen(remoteVersion, CURRENT_VERSION)) {
+      doUpdate = true;
+    } else {
+      Serial.println("User chose not to update.");
+    }
+  }
+  
+  return doUpdate;
+}
+
+void performOTAUpdate() {
+  HTTPClient http;
+  http.begin(downloadURL);
+  http.addHeader("User-Agent", "ESP32-OTA-Client");
+  
+  int httpCode = http.GET();
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.printf("HTTP GET failed: %d\n", httpCode);
+    http.end();
+    return;
+  }
+  
+  int contentLength = http.getSize();
+  if (contentLength <= 0) {
+    Serial.println("Content length is 0 or unknown");
+    http.end();
+    return;
+  }
+  
+  Serial.printf("Starting OTA update. Firmware size: %d bytes\n", contentLength);
+  
+  if (!Update.begin(contentLength)) {
+    Serial.printf("Not enough space for OTA update. Required: %d\n", contentLength);
+    http.end();
+    return;
+  }
+  
+  WiFiClient* client = http.getStreamPtr();
+  size_t written = 0;
+  uint8_t buffer[128];
+  
+  while (http.connected() && written < contentLength) {
+    size_t available = client->available();
+    if (available) {
+      size_t bytesToRead = min(available, sizeof(buffer));
+      size_t bytesRead = client->readBytes(buffer, bytesToRead);
+      
+      size_t bytesWritten = Update.write(buffer, bytesRead);
+      written += bytesWritten;
+      
+      // Show progress
+      int progress = (written * 100) / contentLength;
+      char progressString[6];
+      sprintf(progressString, "%d%%", progress);
+      tft.drawString("Update Progress", TFT_HEIGHT / 2, TFT_WIDTH * 6 / 8);
+      tft.drawString(progressString, TFT_HEIGHT / 2, TFT_WIDTH * 7 / 8);
+      Serial.printf("Progress: %d%% (%d/%d bytes)\n", progress, written, contentLength);
+      
+      if (bytesWritten != bytesRead) {
+        Serial.println("\nWrite error during OTA update");
+        break;
+      }
+    }
+    yield(); // Allow other tasks to run
+  }
+  
+  Serial.println(); // New line after progress
+  
+  if (written == contentLength) {
+    if (Update.end()) {
+      if (Update.isFinished()) {
+        Serial.println("OTA update completed successfully!");
+        Serial.println("Rebooting in 3 seconds...");
+        delay(3000);
+        ESP.restart();
+      } else {
+        Serial.println("OTA update finished but not applied");
+      }
+    } else {
+      Serial.printf("OTA update failed. Error: %s\n", Update.errorString());
+    }
+  } else {
+    Serial.printf("OTA update incomplete. Written: %d, Expected: %d\n", written, contentLength);
+  }
+  
+  http.end();
 }
 
 void webpageLoop() {

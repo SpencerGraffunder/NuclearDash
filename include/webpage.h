@@ -19,6 +19,8 @@ extern const char* password;
 // Webpage setup and loop functions
 void webpageSetup();
 void webpageLoop();
+bool checkForUpdate();
+void performOTAUpdate();
 
 // Handler functions
 void handleRoot();

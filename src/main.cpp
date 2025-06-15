@@ -12,8 +12,8 @@ HaltechCan htc;
 void setup() {
   // Use serial port
   Serial.begin(115200);
-  // delay(1000);
-  // Serial.printf("starting setup\n");
+  delay(1000);
+  Serial.printf("starting setup\n");
 
   screenSetup();
   Serial.printf("screen setup done\n");
@@ -24,7 +24,7 @@ void setup() {
   }
 
   Serial.printf("webpage setup\n");
-  // webpageSetup();
+  webpageSetup();
   // delay(1000);
 
   Serial.println("setup done");
@@ -34,7 +34,7 @@ void loop(void) {
   //Serial.printf("htc %lu\n", millis());
   htc.process();
   //Serial.printf("webpage %lu\n", millis());
-  // webpageLoop();
+  webpageLoop();
   //Serial.printf("screen %lu\n", millis());
   screenLoop();
 }

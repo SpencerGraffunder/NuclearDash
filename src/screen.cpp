@@ -602,7 +602,7 @@ bool saveLayout() {
   }
 
   // Save config version
-  uint8_t configVersion = CONFIG_VERSION; // Increment this if your config structure changes
+  uint8_t configVersion = CURRENT_VERSION;
   File configFile = SPIFFS.open("/config_info.bin", FILE_WRITE);
   if (!configFile) {
     Serial.println("Failed to open config info file for writing");
@@ -650,8 +650,8 @@ bool loadLayout(TFT_eSPI &tft) {
   }
 
   // Check if layout file exists
-  if (!SPIFFS.exists("/button_layout.bin") || savedConfigVersion != CONFIG_VERSION) {
-    Serial.println("No saved layout found. Using default.");
+  if (!SPIFFS.exists("/button_layout.bin") || savedConfigVersion > CURRENT_VERSION) {
+    Serial.println("Too new or no saved layout found. Using default.");
     
     // Copy default layout
     for (uint8_t i = 0; i < N_BUTTONS; i++) {
@@ -705,6 +705,67 @@ bool loadLayout(TFT_eSPI &tft) {
   }
 
   return true;
+}
+
+bool showUpdateScreen(uint32_t remoteVersion, uint32_t currentVersion) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextDatum(TC_DATUM);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setFreeFont(LABEL1_FONT);
+
+  tft.drawString("Update Now?", TFT_HEIGHT / 2, TFT_WIDTH / 8);
+  
+  char remoteVersionString[6];
+  sprintf(remoteVersionString, "%u", remoteVersion);
+  tft.drawString("Remote Version:", TFT_HEIGHT / 2, TFT_WIDTH * 3 / 8 - 12);
+  tft.drawString(remoteVersionString, TFT_HEIGHT / 2, TFT_WIDTH * 3 / 8 + 12);
+  
+  char currentVersionString[6];
+  sprintf(currentVersionString, "%u", currentVersion);
+  tft.drawString("Current Version:", TFT_HEIGHT / 2, TFT_WIDTH * 5 / 8 - 12);
+  tft.drawString(currentVersionString, TFT_HEIGHT / 2, TFT_WIDTH * 5 / 8 + 12);
+
+  // add buttons for yes or no
+  MenuButton yesButton;
+  yesButton.initButtonUL(&tft, TFT_HEIGHT * 3 / 4, TFT_WIDTH * 7 / 8,
+                         TFT_HEIGHT / 4, TFT_WIDTH / 8, TFT_GREEN, TFT_BLACK, TFT_WHITE,
+                         const_cast<char*>("Yes"), 1);
+
+  MenuButton noButton;
+  noButton.initButtonUL(&tft, TFT_HEIGHT * 0 / 4, TFT_WIDTH * 7 / 8,
+                        TFT_HEIGHT / 4, TFT_WIDTH / 8, TFT_RED, TFT_BLACK, TFT_WHITE,
+                        const_cast<char*>("No"), 1);
+  
+  yesButton.drawButton();
+  noButton.drawButton();
+
+  bool doUpdate = false;
+  while (true) {
+    uint16_t t_x = 0, t_y = 0;
+    bool isValidTouch = tft.getTouch(&t_x, &t_y);
+
+    bool yesContains = yesButton.contains(t_x, t_y);
+    bool noContains = noButton.contains(t_x, t_y);
+
+    Serial.printf("yes: %d no: %d\n", yesContains, noContains);
+    // Update button state with current touch
+    yesButton.press(isValidTouch && yesContains);
+    noButton.press(isValidTouch && noContains);
+
+    if (isValidTouch) {
+      Serial.printf("Touch at: (%d, %d)\n", t_x, t_y);
+      if (yesButton.isPressed()) {
+        doUpdate = true;
+        break;
+      } else if (noButton.isPressed()) {
+        doUpdate = false;
+        break;
+      }
+    }
+    delay(20);
+  }
+
+  return doUpdate;
 }
 
 int currentPage = 0;
