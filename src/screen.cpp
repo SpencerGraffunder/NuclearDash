@@ -120,7 +120,7 @@ const int TEXT_YOFFSET = BUTTON_HEIGHT * 7 / 32;  // To center text vertically i
 
 void screenSetup() {
   tft.init();
-
+  
   tft.setRotation(1);
 
   touch_calibrate();
@@ -132,7 +132,6 @@ void screenSetup() {
   delay(20);
 
   digitalWrite(PIN_BEEP, HIGH);
-
 
   loadLayout(tft);
 

@@ -222,7 +222,7 @@ void webpageSetup() {
     Serial.print(".");
     
     // If connection fails after 1 seconds, create access point
-    if (millis() - startAttemptTime > 1000) {
+    if (millis() - startAttemptTime > 3000) {
       Serial.printf("\nFailed to connect to WiFi. ");
       createAccessPoint();
       return;
@@ -280,6 +280,7 @@ uint32_t getRemoteVersion() {
     
     if (!error) {
       version = doc["latest_version"].as<uint32_t>();
+      Serial.printf("Remote version: %u\n", version);
       downloadURL = doc["download_url"].as<String>();
     } else {
       Serial.printf("JSON parsing failed: %s\n", error.c_str());

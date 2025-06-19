@@ -25,7 +25,6 @@ void setup() {
 
   Serial.printf("webpage setup\n");
   webpageSetup();
-  // delay(1000);
 
   Serial.println("setup done");
 }
