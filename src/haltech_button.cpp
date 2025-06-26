@@ -14,7 +14,8 @@ HaltechButton::HaltechButton()
       _yd(0),
       _textdatum(MC_DATUM),
       pressedState(false),
-      previousPressedState(false) 
+      previousPressedState(false),
+      _lastValueTextWidth(0)
 {
 
 }
@@ -87,10 +88,30 @@ void HaltechButton::drawValue() {
   // update the overall alert state
   alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin);
 
+  // Calculate current text width
+  uint16_t currentTextWidth = _gfx->textWidth(buffer);
+  
+  // Determine if we need padding to clear previous longer text
+  uint16_t paddingWidth = 0;
+  if (currentTextWidth < _lastValueTextWidth) {
+    // Current text is shorter, need padding to clear the difference
+    paddingWidth = _lastValueTextWidth + 4; // Add small margin for safety
+  }
+  
+  // Set appropriate text padding
+  if (paddingWidth > 0) {
+    _gfx->setTextPadding(paddingWidth);
+  } else {
+    _gfx->setTextPadding(0);
+  }
+
   // Set text datum to middle center for perfect centering
   _gfx->setTextDatum(MC_DATUM);
   
   _gfx->drawString(buffer, _x1 + (_w/2) + _xd, _y1 + (_h/2) - 4 + _yd);
+  
+  // Store current text width for next comparison
+  _lastValueTextWidth = currentTextWidth;
 
   tft.setFreeFont(LABEL2_FONT);
 }
@@ -139,6 +160,9 @@ void HaltechButton::drawButton(bool flashState) {
   _gfx->fillRoundRect(_x1, _y1, _w, _h, r, fill);
   _gfx->drawRoundRect(_x1, _y1, _w, _h, r, outline);
 
+  // Reset text width tracking since we're redrawing the entire button
+  _lastValueTextWidth = 0;
+
   if (_gfx->textfont == 255) {
     _gfx->setCursor(_x1 + (_w / 8),
                     _y1 + (_h / 4));
@@ -151,8 +175,7 @@ void HaltechButton::drawButton(bool flashState) {
 
     uint8_t tempdatum = _gfx->getTextDatum();
     _gfx->setTextDatum(_textdatum);
-    //uint16_t tempPadding = _gfx->getTextPadding();
-    _gfx->setTextPadding(0);
+    _gfx->setTextPadding(this->_w - 2);
 
     // Draw name of value on top
     _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
@@ -160,8 +183,6 @@ void HaltechButton::drawButton(bool flashState) {
     _gfx->drawString(unitDisplayStrings[this->displayUnit], _x1 + (_w/2) + _xd, _y1 + (_h*3/4) - 4 + _yd);
 
     _gfx->setTextDatum(tempdatum);
-    //_gfx->setTextPadding(tempPadding);
-    _gfx->setTextPadding(this->_w - 2);
 
     // Draw value, even if it's 0. Needed to draw over when it's pressed or unpressed.
     drawValue();

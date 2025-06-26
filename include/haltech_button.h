@@ -117,6 +117,9 @@ private:
   //bool pressedState;
   bool previousPressedState;
   bool ledStates[3]; // Store states of the 3 "LEDs" like the real keypad (green, amber, red)
+  
+  // Text padding optimization variables
+  uint16_t _lastValueTextWidth = 0;  // Width of the last drawn value text
 };
 
 #endif // __HALTECH_BUTTON_H
