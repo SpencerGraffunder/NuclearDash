@@ -140,7 +140,13 @@ void screenSetup() {
 }
 
 void setupMenu() {
+  // Add delay to allow system to stabilize
+  delay(10);
+  
   tft.fillScreen(TFT_BLACK);
+  
+  // Add small delay after screen clear
+  delay(5);
   
   int currentY = 0;  // Starting Y position
   HaltechButton* buttonToModify = &htButtons[buttonToModifyIndex];
@@ -158,6 +164,12 @@ void setupMenu() {
   tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH*1.5, currentY + TOP_MARGIN);
 
   currentY += BUTTON_HEIGHT;
+
+  // Add bounds checking for buttonToModifyIndex
+  if (buttonToModifyIndex >= N_BUTTONS) {
+    Serial.printf("Error: buttonToModifyIndex %u out of bounds\n", buttonToModifyIndex);
+    buttonToModifyIndex = 0;
+  }
 
   tft.drawString("Select Value", LEFT_MARGIN, currentY + TEXT_YOFFSET);
   menuButtons[MENU_VAL_SEL].initButton(&tft, TFT_HEIGHT - BUTTON_WIDTH*1.5, currentY + BUTTON_HEIGHT/2,
@@ -237,11 +249,24 @@ void setupMenu() {
                                       BUTTON_WIDTH*3, BUTTON_HEIGHT, TFT_GREEN, TFT_BLACK, TFT_WHITE,
                                       const_cast<char*>("Select"), 1);
 
+  // Add small delay and yield to prevent watchdog issues
+  delay(1);
+  yield();
+
   drawMenu();
 }
 
 void drawMenu() {
+  // Add small delay at start
+  delay(5);
+  
   HaltechButton* buttonToModify = &htButtons[buttonToModifyIndex];
+
+  // Add bounds checking
+  if (buttonToModifyIndex >= N_BUTTONS) {
+    Serial.printf("Error: buttonToModifyIndex %u out of bounds in drawMenu\n", buttonToModifyIndex);
+    return;
+  }
 
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -273,6 +298,12 @@ void drawMenu() {
 
   // tft.setFreeFont(LABEL1_FONT);
   for (int i = 0; i < MENU_NONE; i++) {
+    // Add yield every few iterations to prevent watchdog issues
+    if (i % 3 == 0) {
+      yield();
+      delay(1);
+    }
+    
     // Serial.printf("drawing button %u\n", i);
     switch (i) {
       case MENU_VAL_SEL:
@@ -329,6 +360,7 @@ void screenLoop() {
   HaltechButton* buttonToModify;
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
+  Serial.printf("Touch: %d, %d\n", t_x, t_y);
 
   static bool waitingForTouchRelease = false;
   bool justChangedStates = false;
@@ -346,6 +378,7 @@ void screenLoop() {
       
   bool isAButtonBeeping = false;
 
+  Serial.printf("screen state %d\n", currScreenState);
   // process drawing
   switch (currScreenState) {
     case STATE_NORMAL:
@@ -369,9 +402,15 @@ void screenLoop() {
       break;
     case STATE_MENU:
       if (justChangedStates) {
+        // Add debug print
+        Serial.println("Setting up menu...");
+        
         // draw menu
         setupMenu();
         lastDebounceTime = millis(); // Reset debounce time when entering menu
+        
+        // Add debug print after setup
+        Serial.println("Menu setup complete");
       }
       break;
     case STATE_VAL_SEL:
@@ -411,8 +450,18 @@ void screenLoop() {
           // Long press detected
           if (htButtons[buttonIndex].isPressed() && 
               (millis() - htButtons[buttonIndex].pressedTime > longPressThresholdTime)) {
+            
+            // Add bounds checking before state change
+            if (buttonIndex >= N_BUTTONS) {
+              Serial.printf("Error: buttonIndex %u out of bounds\n", buttonIndex);
+              break;
+            }
+            
+            Serial.printf("Long press detected on button %u\n", buttonIndex);
+            
             // Clear the screen
             tft.fillScreen(TFT_BLACK);
+            delay(10); // Small delay after screen clear
 
             // change the state
             currScreenState = STATE_MENU;
@@ -772,7 +821,13 @@ const int valuesPerPage = 16; // 2 columns * 8 rows
 
 void setupSelectValueScreen() {
     Serial.println("setting up sel val screen");
+    
+    // Add delay to allow system to stabilize
+    delay(10);
+    
     tft.fillScreen(TFT_BLACK);
+    delay(5); // Small delay after screen clear
+    
     int currentY = 0;  // Starting Y position
     tft.setTextDatum(TL_DATUM);
 
@@ -790,6 +845,12 @@ void setupSelectValueScreen() {
     currentY += BUTTON_HEIGHT;
 
     for (int i = VAL_SEL_1; i <= valuesPerPage - 1; i++) {
+        // Add yield every few iterations to prevent watchdog issues
+        if (i % 4 == 0) {
+            yield();
+            delay(1);
+        }
+        
         Serial.printf("init button %d\n", i);
         int index = currentPage * valuesPerPage + i;
         if (index >= HT_NONE) break; // No more values to display

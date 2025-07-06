@@ -280,26 +280,14 @@ void HaltechCan::process(const unsigned long preemptLimit)
       }
   } else {
     Serial.printf("no alerts %lu\n", millis());
+    // for (int buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++)
+    // {
+    //   HaltechButton* button = &htButtons[buttonIndex];
+    //   HaltechDashValue* dashValue = button->dashValue;
+    //   dashValue->scaled_value = millis() + buttonIndex;
+    //   button->drawValue();
+    // }
   }
-
-  
-  // while (true) { // escape with breaks or when it's gone for too long
-  //   twai_message_t message;
-  //   esp_err_t result = twai_receive(&message, pdMS_TO_TICKS(20)); // Short timeout to check for messages
-
-  //   // Break the loop if no message is available
-  //   if (result != ESP_OK) {
-  //     if (result == ESP_ERR_TIMEOUT) {
-  //       //Serial.println("No more messages");
-  //     } else {
-  //       Serial.printf("Error receiving message: %s\n", esp_err_to_name(result));
-  //     }
-  //     break;
-  //   }
-  //   processCANData(message.identifier, 
-  //                   message.data_length_code, 
-  //                   message.data);
-  // }
 
   //Serial.printf("sending KA %lu\n", millis());
   if (millis() - KAintervalMillis >= KAinterval)
