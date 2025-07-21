@@ -279,7 +279,7 @@ void HaltechCan::process(const unsigned long preemptLimit)
         Serial.printf("Alerts: 0x%04x\n", alerts);
       }
   } else {
-    Serial.printf("no alerts %lu\n", millis());
+    // Serial.printf("no alerts %lu\n", millis());
     // for (int buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++)
     // {
     //   HaltechButton* button = &htButtons[buttonIndex];

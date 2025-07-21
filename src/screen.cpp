@@ -360,7 +360,7 @@ void screenLoop() {
   HaltechButton* buttonToModify;
   uint16_t t_x = 0, t_y = 0;
   bool isValidTouch = tft.getTouch(&t_x, &t_y);
-  Serial.printf("Touch: %d, %d\n", t_x, t_y);
+  // Serial.printf("Touch: %d, %d\n", t_x, t_y);
 
   static bool waitingForTouchRelease = false;
   bool justChangedStates = false;
