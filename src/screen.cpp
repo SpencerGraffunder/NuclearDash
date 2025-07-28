@@ -358,10 +358,7 @@ void screenLoop() {
 
   const unsigned long debounceDelay = 10;
   HaltechButton* buttonToModify;
-  uint16_t t_x = 0, t_y = 0;
-  bool isValidTouch = tft.getTouch(&t_x, &t_y);
-  // Serial.printf("Touch: %d, %d\n", t_x, t_y);
-
+  
   static bool waitingForTouchRelease = false;
   bool justChangedStates = false;
   // Handle state transitions and touch release
@@ -370,7 +367,10 @@ void screenLoop() {
     justChangedStates = true;
   }
   lastScreenState = currScreenState;
-
+  
+  uint16_t t_x = 0, t_y = 0;
+  bool isValidTouch = tft.getTouch(&t_x, &t_y);
+  // Serial.printf("Touch: %d, %d\n", t_x, t_y);
   // If waiting for release and no touch detected, clear the flag
   if (waitingForTouchRelease && !isValidTouch) {
     waitingForTouchRelease = false;
@@ -378,7 +378,7 @@ void screenLoop() {
       
   bool isAButtonBeeping = false;
 
-  Serial.printf("screen state %d\n", currScreenState);
+  // Serial.printf("screen state %d\n", currScreenState);
   // process drawing
   switch (currScreenState) {
     case STATE_NORMAL:
@@ -434,6 +434,7 @@ void screenLoop() {
         for (uint8_t buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++) {
           bool wasPressed = htButtons[buttonIndex].isPressed();
           bool buttonContainsTouch = isValidTouch && htButtons[buttonIndex].contains(t_x, t_y);
+          // Serial.printf("wasPressed = %d, buttonContains = %d\n", wasPressed, buttonContainsTouch);
           
           // Combine touch detection and button state update
           htButtons[buttonIndex].press(buttonContainsTouch);
