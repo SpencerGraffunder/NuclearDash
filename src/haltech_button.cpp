@@ -85,8 +85,10 @@ void HaltechButton::drawValue() {
 
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
-  // update the overall alert state
-  alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin);
+  if (this->dashValue->last_update_time != 0) {
+    // update the overall alert state but only if we've actually gotten a value
+    alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin);
+  }
 
   // Calculate current text width
   uint16_t currentTextWidth = _gfx->textWidth(buffer);

@@ -334,19 +334,6 @@ void drawMenu() {
 }
 
 void screenLoop() {
-
-  // process any incoming CAN messages
-  HaltechDashValue dashValue;
-  // Update the screen with the new dash value
-  // Find the corresponding button and update its value
-  for (uint8_t i = 0; i < N_BUTTONS; i++) {
-    if (htButtons[i].dashValue->can_id == dashValue.can_id) {
-      htButtons[i].dashValue->scaled_value = dashValue.scaled_value;
-      htButtons[i].drawValue();
-      break;
-    }
-  }
-
   static unsigned long lastDebounceTime = 0;
   static ScreenState_e lastScreenState = STATE_NONE;
 
@@ -390,12 +377,12 @@ void screenLoop() {
       }
 
       for (uint8_t buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++) {
-        // check if we need to be beeping (when beep is enabled and alerting state)
+        // check if we need to be alerting (when an alert is enabled and alerting state)
         if (htButtons[buttonIndex].alertBeepEnabled && htButtons[buttonIndex].alertConditionMet) {
           isAButtonBeeping = true;
           Serial.printf("button %d is beeping\n", buttonIndex);
         }
-        if (htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet && flashState != htButtons[buttonIndex].isInverted) {
+        if (htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet) {
           htButtons[buttonIndex].drawButton(flashState);
         }
       }

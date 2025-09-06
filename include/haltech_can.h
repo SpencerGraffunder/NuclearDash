@@ -329,7 +329,7 @@ struct HaltechDashValue
     float offset;                   // Add to raw data after scaling
     unsigned long update_period;    // Period between expected updates from the ECU
     bool is_signed;
-    unsigned long last_update_time; // Millis when last updated
+    unsigned long last_update_time; // Millis when last updated, start at max value
     float scaled_value;             // Value after scaling has been applied
     uint8_t bitfieldPos;
     buttonMode_e buttonType;
