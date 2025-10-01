@@ -142,7 +142,7 @@ void SDLogging::logFrame(uint32_t can_id, uint8_t len, const uint8_t *payload)
     if (n > 0) {
         logFile.println(line);
         logFile.flush();
-        Serial.printf("SD: wrote frame line len=%d\n", n);
+        // Serial.printf("SD: wrote frame line len=%d\n", n);
     } else {
         Serial.println("SD: failed to format frame line");
     }
