@@ -146,6 +146,9 @@ void HaltechButton::drawButton(bool flashState) {
 
   if (flashState && alertConditionMet) {
     drawInverted = !drawInverted;
+    wasDrawnInvertedFromAlert = true; // so we can redraw un-inverted after alert is done
+  } else {
+    wasDrawnInvertedFromAlert = false;
   }
 
   if(drawInverted) {

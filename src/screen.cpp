@@ -382,7 +382,9 @@ void screenLoop() {
           isAButtonBeeping = true;
           Serial.printf("button %d is beeping\n", buttonIndex);
         }
-        if (htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet) {
+        bool buttonNeedsRedraw = false;
+        if ((htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet) ||
+            htButtons[buttonIndex].wasDrawnInvertedFromAlert) {
           htButtons[buttonIndex].drawButton(flashState);
         }
       }

@@ -103,6 +103,7 @@ public:
   bool alertBeepEnabled = false;
   bool alertFlashEnabled = false;
   bool alertFlashState = false;
+  bool wasDrawnInvertedFromAlert = false;
   bool isInverted = false;
   void changeUnits(menuSelectionDirection_e direction);
 
