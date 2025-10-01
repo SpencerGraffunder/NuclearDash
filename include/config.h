@@ -12,6 +12,10 @@
 	#define CAN_TX_PIN GPIO_NUM_33
 	#define CAN_RX_PIN GPIO_NUM_13
 	#define PIN_BEEP 17
+	#define PIN_SD_MISO 19
+	#define PIN_SD_MOSI 23
+	#define PIN_SD_CS 26
+	#define PIN_SD_SCK 18
 #endif
 
 #endif // CONFIG_H

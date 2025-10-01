@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "esp_intr_alloc.h"
 #include "config.h"
+#include "sd_logging.h"
 
 const char* unitDisplayStrings[] = {
     "RPM",       // UNIT_RPM
@@ -263,6 +264,8 @@ void HaltechCan::process(const unsigned long preemptLimit)
             esp_err_t result = twai_receive(&message, 1);
             if (result == ESP_OK) {
               processCANData(message.identifier, message.data_length_code, message.data);
+              // Log the raw frame
+              sdLogger.logFrame(message.identifier, message.data_length_code, message.data);
             } else {
               Serial.printf("Error receiving message or no message in queue: %s\n", esp_err_to_name(result));
               break;
