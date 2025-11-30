@@ -40,12 +40,52 @@ bool SDLogging::begin()
 
 void SDLogging::openNewLogFile()
 {
-    // Create a new file name using millis to avoid collisions
+    // Choose a new filename by scanning existing log_N.csv files and
+    // using the next integer (max+1). This avoids relying on millis()
+    // which may collide across reboots.
+    const char *prefix = "/log_";
+    const char *suffix = ".csv";
+    int maxIndex = -1;
+
+    // Open root directory and iterate files
+    File root = SD.open("/");
+    if (root) {
+        File entry = root.openNextFile();
+        while (entry) {
+            if (!entry.isDirectory()) {
+                const char *name = entry.name();
+                // look for names that start with "log_" and end with ".csv"
+                size_t len = strlen(name);
+                size_t prelen = strlen(prefix);
+                size_t suflen = strlen(suffix);
+                if (len > prelen + suflen && strncmp(name, prefix, prelen) == 0 &&
+                    strcmp(name + len - suflen, suffix) == 0) {
+                    // extract middle part and parse integer
+                    int num = -1;
+                    char numbuf[16] = {0};
+                    size_t numlen = len - prelen - suflen;
+                    if (numlen < sizeof(numbuf)) {
+                        memcpy(numbuf, name + prelen, numlen);
+                        numbuf[numlen] = '\0';
+                        num = atoi(numbuf);
+                        if (num > maxIndex) maxIndex = num;
+                    }
+                }
+            }
+            entry.close();
+            entry = root.openNextFile();
+        }
+        root.close();
+    } else {
+        Serial.println("SD: failed to open root directory when choosing filename");
+    }
+
+    int nextIndex = maxIndex + 1;
+    if (nextIndex < 0) nextIndex = 0; // safety
+
     char fname[32];
-    unsigned long t = millis();
-    snprintf(fname, sizeof(fname), "/log_%lu.csv", t);
-    // Open for append - create if not exists
-    Serial.printf("SD: attempting to open %s\n", fname);
+    snprintf(fname, sizeof(fname), "/log_%d.csv", nextIndex);
+    Serial.printf("SD: attempting to open %s (nextIndex=%d)\n", fname, nextIndex);
     logFile = SD.open(fname, FILE_WRITE);
     if (!logFile) {
         Serial.printf("SD: failed to open %s\n", fname);
