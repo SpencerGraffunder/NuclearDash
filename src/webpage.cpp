@@ -147,7 +147,7 @@ void handleSSE() {
   client.println("Cache-Control: no-cache");
   client.println("Connection: keep-alive");
   client.println();
-  client.clear();
+  client.flush();
 
   sseClients.push_back(client);
 }

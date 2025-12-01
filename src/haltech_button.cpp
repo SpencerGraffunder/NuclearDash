@@ -59,7 +59,7 @@ void HaltechButton::drawValue() {
   uint16_t fill, text;
 
   float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
-  alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin) && this->dashValue->last_update_time != ULONG_MAX;
+  alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin) && this->dashValue->last_update_time != 0;
   drawInverted = alertFlashState && alertConditionMet;
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
