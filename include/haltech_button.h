@@ -81,7 +81,7 @@ public:
   HaltechButton(void);
   void initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeepEnabled, bool alertFlashEnabled);
   void setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
-  void drawButton(bool flashState = false);
+  void drawButton();
   bool contains(int16_t x, int16_t y);
   void press(bool p);
   bool isPressed();
@@ -104,7 +104,6 @@ public:
   bool alertFlashEnabled = false;
   bool alertFlashState = false;
   bool wasDrawnInvertedFromAlert = false;
-  bool isInverted = false;
   void changeUnits(menuSelectionDirection_e direction);
 
 private:
@@ -115,8 +114,8 @@ private:
   uint16_t _w, _h;               // Width and height of button
   uint8_t _textsize, _textdatum; // Text size multiplier and text datum for button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
-  //bool pressedState;
   bool previousPressedState;
+  bool drawInverted;
   bool ledStates[3]; // Store states of the 3 "LEDs" like the real keypad (green, amber, red)
   
   // Text padding optimization variables

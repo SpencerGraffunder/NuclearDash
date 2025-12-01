@@ -58,17 +58,10 @@ void HaltechButton::drawValue() {
 
   uint16_t fill, text;
 
-  bool drawInverted = false;
-  if (toggledState || pressedState) {
-    drawInverted = true;
-  }
-  if (mode == BUTTON_MODE_NONE) {
-    drawInverted = false;
-  }
-
-  if (isInverted) {
-    drawInverted = !drawInverted;
-  }
+  float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
+  alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin) && this->dashValue->last_update_time != ULONG_MAX;
+  drawInverted = alertFlashState && alertConditionMet;
+  snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
   if(drawInverted) {
     fill    = TFT_GREEN;
@@ -80,15 +73,6 @@ void HaltechButton::drawValue() {
 
   tft.setFreeFont(LABEL1_FONT);
   _gfx->setTextColor(text, fill);
-
-  float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
-
-  snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
-
-  if (this->dashValue->last_update_time != 0) {
-    // update the overall alert state but only if we've actually gotten a value
-    alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin);
-  }
 
   // Calculate current text width
   uint16_t currentTextWidth = _gfx->textWidth(buffer);
@@ -126,38 +110,26 @@ void HaltechButton::drawBar() {
   
 }
 
-void HaltechButton::drawButton(bool flashState) {
-  // Serial.printf("drawing button flash %d\n", flashState);
-  isInverted = flashState;
+void HaltechButton::drawButton() {
   uint16_t fill, outline, text;
-
+  
   tft.setFreeFont(LABEL2_FONT);
-
-  bool drawInverted = false;
-  if ((mode == BUTTON_MODE_TOGGLE) && toggledState) {
-    drawInverted = true;
-  }
-  if ((mode != BUTTON_MODE_TOGGLE) && pressedState) {
-    drawInverted = true;
-  }
-  if (mode == BUTTON_MODE_NONE) {
-    drawInverted = false;
+  
+  // make border green if selected or toggled, red otherwise
+  auto outlineColor = TFT_RED;
+  if ((pressedState || toggledState) && mode != BUTTON_MODE_NONE) {
+    outlineColor = TFT_GREEN;
   }
 
-  if (flashState && alertConditionMet) {
-    drawInverted = !drawInverted;
-    wasDrawnInvertedFromAlert = true; // so we can redraw un-inverted after alert is done
-  } else {
-    wasDrawnInvertedFromAlert = false;
-  }
-
-  if(drawInverted) {
+  Serial.printf("Drawing button. Flash: %d Outline: %d\n", alertFlashState, outlineColor);
+  
+  if (drawInverted) {
     fill    = TFT_GREEN;
-    outline = _outlinecolor;
+    outline = outlineColor;
     text    = _fillcolor;
   } else {
     fill    = _fillcolor;
-    outline = _outlinecolor;
+    outline = outlineColor;
     text    = _textcolor;
   }
 
@@ -200,11 +172,11 @@ bool HaltechButton::contains(int16_t x, int16_t y) {
 }
 
 void HaltechButton::press(bool p) {
-  if ((mode == BUTTON_MODE_TOGGLE) && pressedState && previousPressedState == false) {
-    toggledState = !toggledState;
-    // Serial.printf("ts=%u\n", toggledState);
-  }
   previousPressedState = pressedState;
+  if ((mode == BUTTON_MODE_TOGGLE) && p && previousPressedState == false) {
+    toggledState = !toggledState;
+    Serial.printf("ts=%u\n", toggledState);
+  }
   pressedState = p;
 }
 

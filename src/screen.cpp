@@ -156,7 +156,7 @@ void setupMenu() {
 
   menuButtons[MENU_BACK].initButtonUL(&tft, 0, currentY,
                                       BUTTON_WIDTH*1.5, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("Save/Exit"), 1);
+                                      const_cast<char*>("Save & Exit"), 1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   char buttonconfigstr[17];
@@ -373,6 +373,7 @@ void screenLoop() {
         tft.fillScreen(TFT_BLACK);
         for (uint8_t i = 0; i < N_BUTTONS; i++) {
           htButtons[i].drawButton();
+          htButtons[i].pressedState = false;
         }
       }
 
@@ -385,7 +386,7 @@ void screenLoop() {
         bool buttonNeedsRedraw = false;
         if ((htButtons[buttonIndex].alertFlashEnabled && htButtons[buttonIndex].alertConditionMet) ||
             htButtons[buttonIndex].wasDrawnInvertedFromAlert) {
-          htButtons[buttonIndex].drawButton(flashState);
+          htButtons[buttonIndex].drawButton();
         }
       }
       break;
@@ -489,13 +490,13 @@ void screenLoop() {
                 //currScreenState = STATE_BUTTON_TEXT_SEL;
                 break;
               case MENU_ALERT_MIN_DOWN: {
-                float increment = pow(10, -buttonToModify->decimalPlaces);
+                float increment = pow(10, -buttonToModify->decimalPlaces) * 10;
                 buttonToModify->alertMin -= increment;
                 drawMenu();
                 break;
               }
               case MENU_ALERT_MIN_UP: {
-                float increment = pow(10, -buttonToModify->decimalPlaces);
+                float increment = pow(10, -buttonToModify->decimalPlaces) * 10;
                 buttonToModify->alertMin += increment;
                 drawMenu();
                 break;
@@ -615,6 +616,10 @@ void screenLoop() {
     // Serial.printf("changing flash state\n");
     flashState = !flashState;
     lastFlashTime = millis();
+
+    for (uint8_t buttonIndex = 0; buttonIndex < N_BUTTONS; buttonIndex++) {
+      htButtons[buttonIndex].alertFlashState = flashState;
+    }
   }
 
   if (isAButtonBeeping) {
