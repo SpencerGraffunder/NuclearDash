@@ -115,6 +115,7 @@ private:
   uint8_t _textsize, _textdatum; // Text size multiplier and text datum for button
   uint16_t _outlinecolor, _fillcolor, _textcolor;
   bool previousPressedState;
+  bool lastDrawInverted;
   bool drawInverted;
   bool ledStates[3]; // Store states of the 3 "LEDs" like the real keypad (green, amber, red)
   

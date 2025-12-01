@@ -63,6 +63,13 @@ void HaltechButton::drawValue() {
   drawInverted = alertFlashState && alertConditionMet;
   snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
 
+  if (lastDrawInverted != drawInverted) {
+    // If the inverted state has changed, we need to redraw the entire button
+    lastDrawInverted = drawInverted;
+    drawButton();
+    return;
+  }
+
   if(drawInverted) {
     fill    = TFT_GREEN;
     text    = _fillcolor;
