@@ -156,7 +156,7 @@ void setupMenu() {
 
   menuButtons[MENU_BACK].initButtonUL(&tft, 0, currentY,
                                       BUTTON_WIDTH*1.5, BUTTON_HEIGHT, TFT_RED, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>("Save & Exit"), 1);
+                                      const_cast<char*>("Save/Exit"), 1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   char buttonconfigstr[17];
@@ -853,10 +853,15 @@ void setupSelectValueScreen() {
         int x = (i % 2) * (TFT_HEIGHT / 2); // 2 columns
         int y = currentY + (i / 2) * BUTTON_HEIGHT;
 
+        auto drawName = dashValues[index].name;
+        if (strlen(drawName) > 20) {
+          drawName = dashValues[index].short_name;
+        }
+
         valSelButtons[i].initButtonUL(&tft, x, y,
                                       TFT_HEIGHT / 2, BUTTON_HEIGHT,
                                       TFT_GREEN, TFT_BLACK, TFT_WHITE,
-                                      const_cast<char*>(dashValues[index].name), 1);
+                                      const_cast<char*>(drawName), 1);
     }
 }
 

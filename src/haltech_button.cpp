@@ -143,6 +143,7 @@ void HaltechButton::drawButton() {
   uint8_t r = min(_w, _h) / 16; // Corner radius
   _gfx->fillRoundRect(_x1, _y1, _w, _h, r, fill);
   _gfx->drawRoundRect(_x1, _y1, _w, _h, r, outline);
+  _gfx->drawRoundRect(_x1+1, _y1+1, _w-2, _h-2, r, outline);
 
   // Reset text width tracking since we're redrawing the entire button
   _lastValueTextWidth = 0;
@@ -159,7 +160,7 @@ void HaltechButton::drawButton() {
 
     uint8_t tempdatum = _gfx->getTextDatum();
     _gfx->setTextDatum(_textdatum);
-    _gfx->setTextPadding(this->_w - 2);
+    _gfx->setTextPadding(this->_w - 4);
 
     // Draw name of value on top
     _gfx->drawString(this->dashValue->short_name, _x1 + (_w/2) + _xd, _y1 + (_h/4) - 4 + _yd);
