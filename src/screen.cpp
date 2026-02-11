@@ -372,8 +372,8 @@ void screenLoop() {
       if (justChangedStates) {
         tft.fillScreen(TFT_BLACK);
         for (uint8_t i = 0; i < N_BUTTONS; i++) {
-          htButtons[i].drawButton();
           htButtons[i].pressedState = false;
+          htButtons[i].drawButton();
         }
       }
 
@@ -878,8 +878,14 @@ void drawSelectValueScreen() {
 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     char buttonconfigstr[17];
-    sprintf(buttonconfigstr, "Select Value");
+    sprintf(buttonconfigstr, "Select");
     tft.drawString(buttonconfigstr, LEFT_MARGIN + BUTTON_WIDTH, currentY + TOP_MARGIN);
+
+    // Draw page number to right of "Select Value"
+    char pageStr[10];
+    int totalPages = (HT_NONE + valuesPerPage - 1) / valuesPerPage;
+    sprintf(pageStr, "%d/%d", currentPage + 1, totalPages);
+    tft.drawString(pageStr, LEFT_MARGIN + BUTTON_WIDTH * 2.5, currentY + TOP_MARGIN);
 
     valSelButtons[VAL_SEL_PAGE_BACK].drawButton();
     valSelButtons[VAL_SEL_PAGE_FORWARD].drawButton();
@@ -935,6 +941,9 @@ void handleValSelValueSelection(int valueIndex) {
 
     // Change units on the button to get a valid unit
     htButtons[buttonToModifyIndex].changeUnits(DIRECTION_NEXT);
+
+    // Update the saved config with the new displayUnit from changeUnits()
+    updateButtonConfig(buttonToModifyIndex, &htButtons[buttonToModifyIndex]);
 
     // Save and reload the layout
     saveLayout();
