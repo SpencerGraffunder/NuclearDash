@@ -41,6 +41,7 @@ static const UnitOption unitOptions[] = {
     // Speed measurements
     {HT_VEHICLE_SPEED, {UNIT_KPH, UNIT_MPH}, 2},
     {HT_CC_TARGET_SPEED, {UNIT_KPH, UNIT_MPH}, 2},
+    {HT_WHEEL_SLIP, {UNIT_KPH, UNIT_MPH}, 2},
     
     // Temperature measurements
     {HT_COOLANT_TEMPERATURE, {UNIT_CELSIUS, UNIT_FAHRENHEIT}, 2},
