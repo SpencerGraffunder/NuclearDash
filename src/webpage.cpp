@@ -9,7 +9,7 @@
 std::vector<WiFiClient> sseClients;
 
 // WiFi Configuration
-const char* ssid = "Little House On The Quarry";
+const char* ssid = "Deer Meadow Link";
 const char* password = "heckifiknow";
 const char* hostname = "NuclearDash";
 const char* selfssid = "NuclearDash";
