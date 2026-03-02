@@ -128,7 +128,7 @@ void HaltechButton::drawButton() {
     outlineColor = TFT_GREEN;
   }
 
-  Serial.printf("Drawing button. Flash: %d Outline: %d\n", alertFlashState, outlineColor);
+  // Serial.printf("Drawing button. Flash: %d Outline: %d\n", alertFlashState, outlineColor);
   
   if (drawInverted) {
     fill    = TFT_GREEN;

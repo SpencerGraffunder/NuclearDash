@@ -276,24 +276,34 @@ void drawMenu() {
   char valueStr[10];
   float convertedValue = buttonToModify->dashValue->convertToUnit(buttonToModify->displayUnit);
   sprintf(valueStr, "%.*f", buttonToModify->decimalPlaces, convertedValue);
+  // Clear the area before drawing to ensure old values don't show through
+  tft.fillRect(TFT_HEIGHT - 100, TOP_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(valueStr, TFT_HEIGHT - 100, TOP_MARGIN);
 
   // Draw Alert Min value
   char minStr[10];
   sprintf(minStr, "%.*f", buttonToModify->decimalPlaces, buttonToModify->alertMin);
   tft.setTextDatum(TC_DATUM);
+  // Clear the area before drawing
+  tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*2 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(minStr, TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*2 + TEXT_YOFFSET);
 
   // Draw Alert Max value
   char maxStr[10];
   sprintf(maxStr, "%.*f", buttonToModify->decimalPlaces, buttonToModify->alertMax);
+  // Clear the area before drawing
+  tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*3 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(maxStr, TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*3 + TEXT_YOFFSET);
 
   // Draw Decimal Places value
+  // Clear the area before drawing
+  tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*5 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(String(buttonToModify->decimalPlaces), TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*5 + TEXT_YOFFSET);
   
   // Draw Units 
   // tft.setFreeFont(LABEL2_FONT);
+  // Clear the area before drawing
+  tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*6 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(unitDisplayStrings[buttonToModify->displayUnit], TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*6 + TEXT_YOFFSET);
 
   // tft.setFreeFont(LABEL1_FONT);
@@ -490,13 +500,13 @@ void screenLoop() {
                 //currScreenState = STATE_BUTTON_TEXT_SEL;
                 break;
               case MENU_ALERT_MIN_DOWN: {
-                float increment = pow(10, -buttonToModify->decimalPlaces) * 10;
+                float increment = pow(10, -buttonToModify->decimalPlaces);
                 buttonToModify->alertMin -= increment;
                 drawMenu();
                 break;
               }
               case MENU_ALERT_MIN_UP: {
-                float increment = pow(10, -buttonToModify->decimalPlaces) * 10;
+                float increment = pow(10, -buttonToModify->decimalPlaces);
                 buttonToModify->alertMin += increment;
                 drawMenu();
                 break;

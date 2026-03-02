@@ -316,6 +316,39 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
       dashValue->scaled_value = (float)rawVal * dashValue->scale_factor + dashValue->offset;
       button->drawValue();
       dashValue->last_update_time = millis();
+
+            
+      // Update webpage with dashboard values
+      // Map button index to the default dashboard display index
+      HaltechDisplayType_e displayType = button->dashValue->type;
+      uint8_t webpageIndex = 0;
+      uint8_t decimals = button->decimalPlaces;
+      
+      // Find which default button this is to map to webpage index
+      switch(displayType) {
+        case HT_MANIFOLD_PRESSURE: webpageIndex = 0; decimals = 2; break;
+        case HT_RPM: webpageIndex = 1; decimals = 0; break;
+        case HT_THROTTLE_POSITION: webpageIndex = 2; decimals = 0; break;
+        case HT_COOLANT_TEMPERATURE: webpageIndex = 3; decimals = 1; break;
+        case HT_OIL_PRESSURE: webpageIndex = 4; decimals = 1; break;
+        case HT_OIL_TEMPERATURE: webpageIndex = 5; decimals = 1; break;
+        case HT_WIDEBAND_OVERALL: webpageIndex = 6; decimals = 2; break;
+        case HT_AIR_TEMPERATURE: webpageIndex = 7; decimals = 1; break;
+        case HT_BOOST_CONTROL_OUTPUT: webpageIndex = 8; decimals = 0; break;
+        case HT_TARGET_BOOST_LEVEL: webpageIndex = 9; decimals = 1; break;
+        case HT_IGNITION_ANGLE: webpageIndex = 10; decimals = 1; break;
+        case HT_BATTERY_VOLTAGE: webpageIndex = 11; decimals = 2; break;
+        case HT_INTAKE_CAM_ANGLE_1: webpageIndex = 12; decimals = 1; break;
+        case HT_VEHICLE_SPEED: webpageIndex = 13; decimals = 1; break;
+        case HT_TOTAL_FUEL_USED: webpageIndex = 14; decimals = 4; break;
+        case HT_KNOCK_LEVEL_1: webpageIndex = 15; decimals = 2; break;
+        default: webpageIndex = 255; break;
+      }
+      
+      if (webpageIndex < 16) {
+        float convertedValue = dashValue->convertToUnit(button->displayUnit);
+        updateWebpageValue(webpageIndex, convertedValue, decimals);
+      }
     }
   }
 

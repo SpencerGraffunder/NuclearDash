@@ -9,7 +9,7 @@
 std::vector<WiFiClient> sseClients;
 
 // WiFi Configuration
-const char* ssid = "Deer Meadow Link";
+const char* ssid = "Deer Link";
 const char* password = "heckifiknow";
 const char* hostname = "NuclearDash";
 const char* selfssid = "NuclearDash";
@@ -116,7 +116,7 @@ void handleNotFound() {
 
 void setupOTA() {
   ArduinoOTA.setPort(3232);  // Explicitly set OTA port
-  ArduinoOTA.setHostname("ESP32-OTA");  // Optional: give a unique name
+  ArduinoOTA.setHostname(hostname);  // Use configured hostname
   
   ArduinoOTA.onStart([]() {
     Serial.println("OTA Update Starting");
@@ -188,6 +188,9 @@ void createAccessPoint() {
     Serial.println("Error setting up MDNS responder for AP!");
   }
 
+  // Stop existing server if running
+  server.stop();
+  
   // Server routes for AP mode (these would be the same as in normal mode)
   server.on("/", handleRoot);
   server.on("/ota", handleOTAPage);
@@ -220,8 +223,8 @@ void webpageSetup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(200);
     Serial.print(".");
-    
-    // If connection fails after 1 seconds, create access point
+
+    // If connection fails after 3 seconds, create access point
     if (millis() - startAttemptTime > 3000) {
       Serial.printf("\nFailed to connect to WiFi. ");
       createAccessPoint();
