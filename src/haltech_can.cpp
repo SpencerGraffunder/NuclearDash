@@ -322,7 +322,7 @@ void HaltechCan::processCANData(long unsigned int rxId, unsigned char len, unsig
       // Map button index to the default dashboard display index
       HaltechDisplayType_e displayType = button->dashValue->type;
       uint8_t webpageIndex = 0;
-      uint8_t decimals = button->decimalPlaces;
+      int8_t decimals = button->decimalPlaces;
       
       // Find which default button this is to map to webpage index
       switch(displayType) {
@@ -428,7 +428,7 @@ void HaltechCan::SendButtonInfo()
     {
       bool buttonStatus = false;
       if (htButtons[i + j * 8].mode == BUTTON_MODE_TOGGLE) {
-        buttonStatus = htButtons[i + j * 8].pressedState;
+        buttonStatus = htButtons[i + j * 8].toggledState;
       } else {
         buttonStatus = htButtons[i + j * 8].isPressed();
       }

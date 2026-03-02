@@ -20,7 +20,7 @@ HaltechButton::HaltechButton()
 
 }
 
-void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, uint8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeepEnabled, bool alertFlashEnabled)
+void HaltechButton::initButton(TFT_eSPI *gfx, int16_t x1, int16_t y1, uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t textcolor, uint8_t textsize, HaltechDashValue* dashValue, HaltechUnit_e unit, int8_t decimalPlaces, buttonMode_e mode, float alertMin, float alertMax, bool alertBeepEnabled, bool alertFlashEnabled)
 {
   _x1             = x1;
   _y1             = y1;
@@ -61,7 +61,7 @@ void HaltechButton::drawValue() {
   float convertedValue = this->dashValue->convertToUnit(this->displayUnit);
   alertConditionMet = (convertedValue > alertMax || convertedValue < alertMin) && this->dashValue->last_update_time != 0;
   drawInverted = alertFlashState && alertConditionMet;
-  snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, convertedValue);
+  snprintf(buffer, sizeof(buffer), "%.*f", max((int)decimalPlaces, 0), convertedValue);
 
   if (lastDrawInverted != drawInverted) {
     // If the inverted state has changed, we need to redraw the entire button

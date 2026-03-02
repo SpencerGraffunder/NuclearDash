@@ -361,7 +361,7 @@ void performOTAUpdate() {
   while (http.connected() && written < contentLength) {
     size_t available = client->available();
     if (available) {
-      size_t bytesToRead = min(available, sizeof(buffer));
+      size_t bytesToRead = max(available, sizeof(buffer));
       size_t bytesRead = client->readBytes(buffer, bytesToRead);
       
       size_t bytesWritten = Update.write(buffer, bytesRead);

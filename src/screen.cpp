@@ -8,7 +8,7 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 struct ButtonConfiguration {
   HaltechDisplayType_e displayType;
   HaltechUnit_e displayUnit;
-  uint8_t decimalPlaces;
+  int8_t decimalPlaces;
   buttonMode_e mode;
   float alertMin;
   float alertMax;
@@ -275,14 +275,14 @@ void drawMenu() {
   // Draw current button value
   char valueStr[10];
   float convertedValue = buttonToModify->dashValue->convertToUnit(buttonToModify->displayUnit);
-  sprintf(valueStr, "%.*f", buttonToModify->decimalPlaces, convertedValue);
+  sprintf(valueStr, "%.*f", max(0, (int)buttonToModify->decimalPlaces), convertedValue);
   // Clear the area before drawing to ensure old values don't show through
   tft.fillRect(TFT_HEIGHT - 100, TOP_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(valueStr, TFT_HEIGHT - 100, TOP_MARGIN);
 
   // Draw Alert Min value
   char minStr[10];
-  sprintf(minStr, "%.*f", buttonToModify->decimalPlaces, buttonToModify->alertMin);
+  sprintf(minStr, "%.*f", max(0, (int)buttonToModify->decimalPlaces), buttonToModify->alertMin);
   tft.setTextDatum(TC_DATUM);
   // Clear the area before drawing
   tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*2 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
@@ -290,7 +290,7 @@ void drawMenu() {
 
   // Draw Alert Max value
   char maxStr[10];
-  sprintf(maxStr, "%.*f", buttonToModify->decimalPlaces, buttonToModify->alertMax);
+  sprintf(maxStr, "%.*f", max(0, (int)buttonToModify->decimalPlaces), buttonToModify->alertMax);
   // Clear the area before drawing
   tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*3 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
   tft.drawString(maxStr, TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*3 + TEXT_YOFFSET);
@@ -298,7 +298,7 @@ void drawMenu() {
   // Draw Decimal Places value
   // Clear the area before drawing
   tft.fillRect(TFT_HEIGHT - BUTTON_WIDTH*1.5 - 50, BUTTON_HEIGHT*5 + TEXT_YOFFSET, BUTTON_WIDTH, BUTTON_HEIGHT, TFT_BLACK);
-  tft.drawString(String(buttonToModify->decimalPlaces), TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*5 + TEXT_YOFFSET);
+  tft.drawString(String(max(0, (int)buttonToModify->decimalPlaces)), TFT_HEIGHT - BUTTON_WIDTH*1.5, BUTTON_HEIGHT*5 + TEXT_YOFFSET);
   
   // Draw Units 
   // tft.setFreeFont(LABEL2_FONT);
@@ -532,7 +532,7 @@ void screenLoop() {
                 drawMenu();
                 break;
               case MENU_DECIMALS_DOWN:
-                if (buttonToModify->decimalPlaces > 0) {
+                if (buttonToModify->decimalPlaces > -2) {
                   buttonToModify->decimalPlaces -= 1;
                 }
                 drawMenu();
@@ -740,8 +740,8 @@ bool loadLayout(TFT_eSPI &tft) {
     htButtons[i].initButton(&tft, 
         i % 4 * TFT_HEIGHT / 4,
         i / 4 * TFT_WIDTH / 4,
-        TFT_HEIGHT / 4,
-        TFT_WIDTH / 4,
+        TFT_HEIGHT / 4-2,
+        TFT_WIDTH / 4-2,
         TFT_GREEN,
         TFT_BLACK,
         TFT_WHITE,
